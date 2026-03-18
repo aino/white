@@ -97,12 +97,6 @@ export default function Image({
     .join(', ')
 
   return (
-    <img
-      src={src}
-      srcSet={srcSet}
-      alt={alt || ''}
-      {...imageProps}
-      {...props}
-    />
+    <img src={src} srcSet={srcSet} alt={alt || ''} {...imageProps} {...props} />
   )
 }

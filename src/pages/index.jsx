@@ -1,6 +1,6 @@
 import Layout from 'src/components/Layout'
 
-export default function Home({ locale, path, data }) {
+export default function Home({ locale, path }) {
   return (
     <Layout locale={locale} path={path}>
       <h1>White</h1>

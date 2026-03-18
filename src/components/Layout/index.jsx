@@ -37,10 +37,7 @@ export default function Layout({
             <title>
               {title} — {siteName}
             </title>
-            <meta
-              property="og:title"
-              content={`${title} — ${siteName}`}
-            />
+            <meta property="og:title" content={`${title} — ${siteName}`} />
           </>
         ) : (
           <>

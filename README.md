@@ -2,6 +2,10 @@
 
 Static site generator with **Persistent Component Architecture** - where components can optionally maintain their state across page transitions without any virtual DOM or state management library.
 
+## Displaimer
+
+Don’t use this for production! It’s an Aino experiment in back-to-basics with modern DX.
+
 ## What's Unique
 
 - **Physical DOM node transfer** between pages (with event listeners intact)
@@ -331,7 +335,3 @@ White works on any static hosting platform:
 ```bash
 npm run build  # Generates ./dist
 ```
-
----
-
-**White gives you the best of both worlds: React-like components with traditional multi-page app simplicity.**
