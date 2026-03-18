@@ -187,26 +187,7 @@ export default function about(app) {
 }
 ```
 
-**Styles** are automatically bundled from all `.css` files in `pages/` and `components/`:
-
-```css
-/* pages/about/about.css - automatically included in build */
-.about-page {
-  background: #f0f0f0;
-}
-
-/* components/Counter/counter.css - automatically included */
-.counter {
-  border: 1px solid #ccc;
-}
-```
-
-Import all styles with the virtual module:
-
-```javascript
-// js/white.js
-import 'white/css' // Imports ALL .css files automatically
-```
+**Styles** are automatically discovered and bundled from all `.css` files in `pages/` and `components/`. Just create a `.css` file next to your component or page and it will be included in the build.
 
 **Note:** White uses plain CSS only - no SCSS, Less, or CSS modules. Use class-based scoping for component isolation.
 
