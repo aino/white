@@ -1,0 +1,33 @@
+{
+  "framework": "vite",
+  "outputDirectory": "dist",
+  "images": {
+    "domains": [],
+    "minimumCacheTTL": 60,
+    "formats": [
+      "image/avif",
+      "image/webp"
+    ],
+    "dangerouslyAllowSVG": true,
+    "sizes": [
+      160,
+      320,
+      640,
+      960,
+      1280,
+      1600,
+      1920,
+      2240
+    ]
+  },
+  "routes": [
+    {
+      "handle": "filesystem"
+    },
+    {
+      "src": "/.*",
+      "status": 404,
+      "dest": "/404/index.html"
+    }
+  ]
+}

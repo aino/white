@@ -1,0 +1,67 @@
+@import 'reset.css';
+@import 'sections.css';
+
+:root {
+  color-scheme: light dark;
+  --black: rgb(24, 24, 24);
+  --white: rgb(245, 245, 240);
+  --black-rgb: 24, 24, 24;
+  --white-rgb: 245, 245, 240;
+}
+
+html.dark {
+  --black: rgb(245, 245, 240);
+  --white: rgb(24, 24, 24);
+  --black-rgb: 245, 245, 240;
+  --white-rgb: 24, 24, 24;
+}
+
+html {
+  color: var(--black);
+  background: var(--white);
+  font-family: system-ui, -apple-system, sans-serif;
+  font-size: 16px;
+  line-height: 1.5;
+  transition:
+    background-color 0.1s ease-out,
+    color 0.1s ease-out;
+  ::selection {
+    background: var(--black);
+    color: var(--white);
+  }
+}
+
+body {
+  margin: 0;
+  padding: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#app {
+  min-height: 100dvh;
+  padding: 2rem;
+}
+
+a {
+  color: inherit;
+}
+
+.image,
+.video {
+  position: relative;
+  overflow: hidden;
+  img,
+  video {
+    opacity: 1;
+    width: 100%;
+  }
+}
+
+.video {
+  overflow: hidden;
+  video {
+    width: 100%;
+    height: auto;
+  }
+}

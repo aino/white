@@ -1,0 +1,223 @@
+import express from 'express'
+import { fileURLToPath } from 'url'
+import { dirname, join } from 'path'
+import fs from 'fs/promises'
+import fsSync from 'fs'
+import sharp from 'sharp'
+import fetch from 'node-fetch'
+import middlewareHandler, { config as middlewareConfig } from '../../src/middleware.js'
+import { matchesMiddleware } from './middlewareMatcher.js'
+import { LOCALES as locales } from '../../src/config.js'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = dirname(__filename)
+
+const app = express()
+const PORT = 4666
+const DIST_DIR = join(__dirname, '../../dist')
+const API_DIR = join(__dirname, '../../api')
+
+// Sharp image processing middleware
+const sharpMiddleware = async (req, res, next) => {
+  const url = req.url
+
+  // Match the dynamic image resizing route
+  if (url.startsWith('/_sharp/')) {
+    try {
+      const query = new URLSearchParams(url.split('?')[1])
+      const encodedImagePath = query.get('path')
+      const imagePath = decodeURIComponent(encodedImagePath)
+      const width = parseInt(query.get('w'), 10)
+      const quality = parseInt(query.get('q'), 10) || 80
+
+      if (!imagePath || !width) {
+        res.status(400).send('Invalid parameters')
+        return
+      }
+
+      let img
+
+      if (imagePath.startsWith('/')) {
+        const imageFullPath = join(process.cwd(), 'src', 'public', imagePath)
+        if (!fsSync.existsSync(imageFullPath)) {
+          res.status(404).send('Image not found')
+          return
+        }
+        img = sharp(imageFullPath)
+      } else if (
+        imagePath.startsWith('http://') ||
+        imagePath.startsWith('https://')
+      ) {
+        // External URL
+        const response = await fetch(imagePath)
+        if (!response.ok) {
+          res.status(404).send('Image not found')
+          return
+        }
+        const buffer = await response.buffer()
+        img = sharp(buffer)
+      } else {
+        res.status(400).send('Invalid image path')
+        return
+      }
+
+      // Determine output format based on input or default to webp for better compression
+      const metadata = await img.metadata()
+      let outputBuffer
+      let contentType
+      
+      if (metadata.format === 'jpeg' || metadata.format === 'jpg') {
+        outputBuffer = await img.resize(width).jpeg({ quality }).toBuffer()
+        contentType = 'image/jpeg'
+      } else if (metadata.format === 'png') {
+        outputBuffer = await img.resize(width).png({ quality }).toBuffer()
+        contentType = 'image/png'
+      } else {
+        // Default to webp for better compression and broad support
+        outputBuffer = await img.resize(width).webp({ quality }).toBuffer()
+        contentType = 'image/webp'
+      }
+
+      res.setHeader('Content-Type', contentType)
+      res.setHeader('Cache-Control', 'public, max-age=31536000, immutable')
+      res.end(outputBuffer)
+    } catch (err) {
+      console.error('Image processing error:', err)
+      res.status(500).send('Image processing error')
+    }
+  } else {
+    next()
+  }
+}
+
+// Helper function to get locale from URL path
+const getLocaleFromUrl = (url) => {
+  const localeMatch = url.match(new RegExp(`^/(${locales.slice(1).join('|')})(/|$)`))
+  return localeMatch?.[1] || locales[0]
+}
+
+// Middleware to parse JSON request bodies
+app.use(express.json())
+
+// Add sharp image processing middleware
+app.use(sharpMiddleware)
+
+// Apply Vercel middleware
+app.use(async (req, res, next) => {
+  try {
+    // Check if path matches middleware matcher - always use default exclusions
+    if (!matchesMiddleware(req.path, middlewareConfig?.matcher || [])) {
+      return next()
+    }
+    
+    const result = await middlewareHandler(req)
+    // Handle middleware response if it returns anything
+    if (result && result.headers) {
+      // Apply any headers from middleware
+      Object.entries(result.headers).forEach(([key, value]) => {
+        res.setHeader(key, value)
+      })
+    }
+    next()
+  } catch (error) {
+    console.error('Middleware error:', error)
+    next()
+  }
+})
+
+// Setup and start server
+;(async () => {
+  // Setup API routes first
+  try {
+    const files = await fs.readdir(API_DIR)
+    
+    await Promise.all(
+      files.map(async (file) => {
+        if (!file.endsWith('.js')) return
+        
+        const route = `/api/${file.replace('.js', '')}`
+        const module = await import(join(API_DIR, file))
+        
+        app.all(route, async (req, res) => {
+          // Support both default export and named HTTP method exports
+          if (module.default) {
+            module.default(req, res)
+          } else {
+            // Check for named exports like GET, POST, etc.
+            const method = req.method.toUpperCase()
+            const methodHandler = module[method]
+            
+            if (methodHandler) {
+              try {
+                const result = await methodHandler(req, res)
+                
+                // Handle Vercel-style Response objects
+                if (result && typeof result.text === 'function') {
+                  const text = await result.text()
+                  res.setHeader('Content-Type', result.headers.get('content-type') || 'text/plain')
+                  res.status(result.status || 200).send(text)
+                } else if (result && result.body) {
+                  // Handle other Response-like objects
+                  res.status(result.status || 200).send(result.body)
+                }
+                // If handler doesn't return anything, assume it handled the response
+              } catch (error) {
+                res.status(500).json({ error: error.message })
+              }
+            } else {
+              res.status(405).json({ error: `Method ${method} not allowed` })
+            }
+          }
+        })
+      })
+    )
+    
+    console.log(`API routes loaded from ${API_DIR}`)
+  } catch (error) {
+    console.log('No API directory found or error loading routes:', error.message)
+  }
+
+  // Serve static files from dist
+  app.use(express.static(DIST_DIR))
+
+  // SPA fallback - serve specific HTML file or 404 for non-API routes
+  app.use((req, res, next) => {
+    if (!req.path.startsWith('/api/') && req.method === 'GET') {
+      // Try to find the specific HTML file for this route
+      let htmlPath = req.path
+      if (htmlPath.endsWith('/')) {
+        htmlPath = htmlPath + 'index.html'
+      } else {
+        htmlPath = htmlPath + '/index.html'
+      }
+      
+      const fullPath = join(DIST_DIR, htmlPath)
+      
+      // Check if specific HTML file exists
+      if (fsSync.existsSync(fullPath)) {
+        res.sendFile(fullPath)
+      } else {
+        // Serve locale-specific 404 page
+        const locale = getLocaleFromUrl(req.path)
+        const notFoundPath = locale === locales[0] ? '/404/index.html' : `/${locale}/404/index.html`
+        const notFoundFullPath = join(DIST_DIR, notFoundPath)
+        
+        if (fsSync.existsSync(notFoundFullPath)) {
+          res.status(404).sendFile(notFoundFullPath)
+        } else {
+          // Ultimate fallback if 404 page doesn't exist
+          res.status(404).send('404 - Page Not Found')
+        }
+      }
+    } else if (req.path.startsWith('/api/')) {
+      res.status(404).json({ error: 'API route not found' })
+    } else {
+      next()
+    }
+  })
+  
+  app.listen(PORT, () => {
+    console.log(`Preview server running at http://localhost:${PORT}`)
+    console.log(`Serving static files from ${DIST_DIR}`)
+  })
+})()
