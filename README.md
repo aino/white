@@ -97,6 +97,29 @@ export default async function counter(node) {
 }
 ```
 
+### 🧹 Cleanup Functions
+
+Both component scripts and page scripts return a **destroy function**. White calls this automatically when the component is removed from the DOM or when the user navigates away from a page:
+
+```javascript
+export default async function myComponent(node) {
+  // Setup: runs when component mounts
+  const interval = setInterval(tick, 1000)
+  node.addEventListener('click', onClick)
+
+  // Return a cleanup function
+  return () => {
+    // Teardown: runs when component unmounts or page changes
+    clearInterval(interval)
+    node.removeEventListener('click', onClick)
+  }
+}
+```
+
+This prevents memory leaks and stale event listeners. Every `addEventListener` should have a matching `removeEventListener` in the cleanup. Every `state()` should call `.destroy()`. Every timer should be cleared.
+
+**Persistent components** (those with a `key` attribute) are only cleaned up when they no longer appear in the next page's DOM. If the component exists on both pages, it is physically transferred and the destroy function is *not* called.
+
 ### 📁 File Structure
 
 ```
