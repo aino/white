@@ -293,6 +293,34 @@ export const pages = {
 }
 ```
 
+### 🔌 API Routes
+
+Create serverless API endpoints by adding files to the `api/` directory:
+
+```javascript
+// api/hello.js
+export const GET = async (req) => {
+  return new Response(JSON.stringify({ message: 'Hello' }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
+export const POST = async (req) => {
+  const body = await req.json()
+  return new Response(JSON.stringify({ received: body }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+```
+
+File names map to routes: `api/hello.js` → `/api/hello`. Use named exports (`GET`, `POST`, etc.) for method-specific handlers.
+
+**Development:** Run `npm run dev:api` to start both Vite and the API server. Vite proxies `/api` requests to the Express-based API server automatically.
+
+**Production:** On Vercel, each file in `api/` is deployed as a serverless function — no extra configuration needed.
+
 ## Key Benefits
 
 ### 🚀 Performance
