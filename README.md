@@ -120,30 +120,43 @@ This prevents memory leaks and stale event listeners. Every `addEventListener` s
 
 **Persistent components** (those with a `key` attribute) are only cleaned up when they no longer appear in the next page's DOM. If the component exists on both pages, it is physically transferred and the destroy function is *not* called.
 
-### 📁 File Structure
+### 📁 Pages & Routing
+
+The directory structure inside `src/pages/` defines the URL routes. Each `index.jsx` becomes an HTML page:
 
 ```
-├── pages/
-│   ├── index.jsx           # Home page
-│   ├── about/
-│   │   ├── index.jsx       # About page
-│   │   ├── about.js        # Page scripts (auto-loaded)
-│       └── about.css       # Page styles (auto-bundled)
-│   └── work/
-│       ├── index.jsx       # Work index
-│       └── [slug]/
-│           └── index.jsx   # Dynamic work pages
-├── components/
-│   ├── Layout/
-│   │   ├── index.jsx
-│   │   ├── layout.js       # Component behavior (auto-loaded)
-│   │   └── layout.css      # Component styles (auto-bundled)
-│   └── Counter/
-│       ├── index.jsx
-│       ├── counter.js      # Component behavior (auto-loaded)
-│       └── counter.css     # Component styles (auto-bundled)
-└── js/
-    ├── main.js             # Global initialization
+src/pages/index.jsx              → /
+src/pages/about/index.jsx        → /about/
+src/pages/work/index.jsx         → /work/
+src/pages/work/[slug]/index.jsx  → /work/project-a/, /work/project-b/, ...
+```
+
+Routes in `data.config.js` must mirror this directory structure — they provide data to the pages, not define the routes. A page can exist without a route entry (it just receives no data props), but a `[slug]` directory needs a matching route with a `slugs()` function so White knows which pages to generate at build time.
+
+```
+├── src/
+│   ├── pages/
+│   │   ├── index.jsx           # → /
+│   │   ├── about/
+│   │   │   ├── index.jsx       # → /about/
+│   │   │   ├── about.js        # Page script (auto-loaded)
+│   │   │   └── about.css       # Page styles (auto-bundled)
+│   │   └── work/
+│   │       ├── index.jsx       # → /work/
+│   │       └── [slug]/
+│   │           └── index.jsx   # → /work/{slug}/
+│   ├── components/
+│   │   ├── Layout/
+│   │   │   └── index.jsx
+│   │   └── Counter/
+│   │       ├── index.jsx
+│   │       ├── counter.js      # Component behavior (auto-loaded)
+│   │       └── counter.css     # Component styles (auto-bundled)
+│   └── js/
+│       └── main.js             # Global initialization
+├── api/
+│   └── hello.js                # → /api/hello
+└── data.config.js              # Route data configuration
 ```
 
 ### 🎨 Layouts
