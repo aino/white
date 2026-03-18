@@ -1,3 +1,6 @@
+import Header from '../Header'
+import Footer from '../Footer'
+
 export default function Layout({
   locale,
   children,
@@ -5,10 +8,9 @@ export default function Layout({
   title,
   description,
   image,
-  path,
+  path, // eslint-disable-line no-unused-vars
 }) {
   const siteName = 'White'
-  const siteUrl = ''
 
   return (
     <html lang={locale || 'en'} data-component="layout">
@@ -45,13 +47,7 @@ export default function Layout({
             <meta property="og:title" content={siteName} />
           </>
         )}
-        {siteUrl && (
-          <>
-            <meta property="og:url" content={`${siteUrl}${path || ''}`} />
-            <link rel="canonical" href={`${siteUrl}${path || ''}`} />
-          </>
-        )}
-        {/* Prescript: detect dark mode before paint to prevent flash */}
+        {/* Detect dark mode before paint to prevent flash */}
         <script type="text/javascript">{`
           ;((html) => {
             const site = localStorage.getItem('site')
@@ -67,7 +63,9 @@ export default function Layout({
         <script type="module">import '@white/white.js'</script>
       </head>
       <body class={bodyclass}>
+        <Header />
         <main id="app">{children}</main>
+        <Footer />
       </body>
     </html>
   )

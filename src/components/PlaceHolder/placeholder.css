@@ -1,9 +1,0 @@
-.placeholder {
-  width: 100%;
-  background: rgba(var(--black-rgb), 0.05);
-  & + h3,
-  & + p,
-  & + h4 {
-    margin-top: var(--line);
-  }
-}

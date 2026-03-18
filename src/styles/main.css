@@ -1,5 +1,4 @@
 @import 'reset.css';
-@import 'sections.css';
 
 :root {
   color-scheme: light dark;
@@ -23,8 +22,8 @@ html {
   font-size: 16px;
   line-height: 1.5;
   transition:
-    background-color 0.1s ease-out,
-    color 0.1s ease-out;
+    background-color 0.15s ease-out,
+    color 0.15s ease-out;
   ::selection {
     background: var(--black);
     color: var(--white);
@@ -40,11 +39,33 @@ body {
 
 #app {
   min-height: 100dvh;
-  padding: 2rem;
+  max-width: 48rem;
+  margin: 0 auto;
+  padding: 5rem 2rem 2rem;
 }
 
 a {
   color: inherit;
+}
+
+h1 {
+  font-size: 2rem;
+  line-height: 1.2;
+  margin-bottom: 1rem;
+}
+
+h2 {
+  font-size: 1.25rem;
+  line-height: 1.3;
+  margin-bottom: 0.5rem;
+}
+
+p {
+  margin-bottom: 0.75rem;
+}
+
+p + p {
+  margin-top: 0;
 }
 
 .image,
@@ -53,15 +74,7 @@ a {
   overflow: hidden;
   img,
   video {
-    opacity: 1;
     width: 100%;
-  }
-}
-
-.video {
-  overflow: hidden;
-  video {
-    width: 100%;
-    height: auto;
+    display: block;
   }
 }

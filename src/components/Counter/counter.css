@@ -1,0 +1,29 @@
+[data-component='counter'] {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: rgba(var(--black-rgb), 0.05);
+  border-radius: 4px;
+  margin: 1rem 0;
+  .counter-value {
+    font-size: 2rem;
+    font-weight: 700;
+    min-width: 3rem;
+    text-align: center;
+  }
+  button {
+    padding: 0.5rem 1rem;
+    background: rgba(var(--black-rgb), 0.1);
+    border-radius: 4px;
+    cursor: pointer;
+    &:hover {
+      background: rgba(var(--black-rgb), 0.2);
+    }
+  }
+  .counter-pathname {
+    margin-left: auto;
+    opacity: 0.5;
+    font-size: 0.875rem;
+  }
+}
