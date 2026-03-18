@@ -250,7 +250,7 @@ const unsubscribe = count.subscribe((newVal, oldVal) => {
 
 ### 🎯 Data Configuration
 
-All page data is configured in `data.config.js`. It exports two things: `globalData` and `routes`.
+All page data is configured in `data.config.js`. It exports two things: `globalData` and `routes`. Both `globalData()` and route `data()` functions are async, so you can fetch from databases, APIs, or the file system.
 
 **`globalData()`** is an async function that runs once at build time. Its return value is passed to every route's `data()` and `slugs()` functions:
 
