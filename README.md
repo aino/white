@@ -170,9 +170,25 @@ export default function Layout({ children, lang }) {
 }
 ```
 
-### 🔀 Page Scripts & Styles
+### 🔀 Main Entry & Page Scripts
 
-**Scripts** are automatically discovered and loaded from both `pages/` and `components/` directories. No manual imports needed!
+**`src/js/main.js`** is the global entry script. It runs on every page and exports `pageTransition` — a function that controls how `#app` swaps between pages during SPA navigation:
+
+```javascript
+// src/js/main.js
+export async function pageTransition(oldApp, newApp) {
+  oldApp.replaceWith(newApp)
+  scrollTo(0, 0)
+}
+
+export default async function main() {
+  // Global setup: runs once on page load
+}
+```
+
+You can customize `pageTransition` to add animations, fade effects, etc. The `oldApp` and `newApp` arguments are the actual `#app` DOM elements.
+
+**Page scripts** are automatically discovered and loaded from both `pages/` and `components/` directories. No manual imports needed!
 
 ```javascript
 // pages/about/about.js (auto-loaded for /about route)
