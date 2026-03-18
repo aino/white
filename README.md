@@ -172,7 +172,7 @@ export default function Layout({ children, lang }) {
 
 ### 🔀 Main Entry & Page Scripts
 
-**`src/js/main.js`** is the global entry script. It runs on every page and exports `pageTransition` — a function that controls how `#app` swaps between pages during SPA navigation:
+**`src/js/main.js`** is the global entry script. It runs once on initial page load and exports `pageTransition` — a function that controls how `#app` swaps between pages during SPA navigation:
 
 ```javascript
 // src/js/main.js
