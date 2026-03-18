@@ -248,49 +248,68 @@ const unsubscribe = count.subscribe((newVal, oldVal) => {
 })
 ```
 
-### 🌐 Dynamic Routes
+### 🎯 Data Configuration
 
-Create dynamic pages with `[slug]` directories:
+All page data is configured in `data.config.js`. It exports two things: `globalData` and `routes`.
+
+**`globalData()`** is an async function that runs once at build time. Its return value is passed to every route's `data()` and `slugs()` functions:
 
 ```javascript
 // data.config.js
-export const pages = {
-  '/work/[slug]': {
-    slugs: async () => ['project-a', 'project-b'],
-    data: async ({ slug }) => ({
-      project: await fetch(`/api/projects/${slug}`),
-    }),
-  },
+export const globalData = async () => {
+  // Fetch from a database, API, file system, etc.
+  return {
+    site: { name: 'My Site' },
+    posts: [
+      { slug: 'hello-world', title: 'Hello World' },
+      { slug: 'getting-started', title: 'Getting Started' },
+    ],
+  }
 }
 ```
 
-### 🎯 Data Configuration
-
-Configs like locales is in `config.js`
+**`routes`** maps URL paths to data loaders. The `data()` function receives `{ locale, globalData }` and its return value is passed as props to the page component:
 
 ```javascript
-export const LOCALES = ['en', 'sv']
-```
-
-Configure page data in `data.config.js`:
-
-```javascript
-export const locales = ['en', 'sv']
-
-export const global = ({ lang }) => ({
-  siteName: 'My Site',
-})
-
-export const pages = {
+export const routes = {
   '/': {
-    data: async ({ lang }) => ({
-      title: lang === 'en' ? 'Home' : 'Hem',
+    data: async ({ locale, globalData }) => ({
+      title: globalData.site.name,
+      path: '',
     }),
   },
   '/about': {
-    data: () => ({ title: 'About Us' }),
+    data: async ({ locale }) => ({
+      title: 'About',
+      path: '/about',
+    }),
   },
 }
+```
+
+**Dynamic routes** use `[slug]` directories. They require a `slugs()` function that returns all valid slugs, and a `data()` function that also receives `slug`:
+
+```javascript
+export const routes = {
+  '/posts/[slug]': {
+    slugs: (globalData) => globalData.posts.map((p) => p.slug),
+    data: async ({ slug, locale, globalData }) => {
+      const post = globalData.posts.find((p) => p.slug === slug)
+      return {
+        title: post.title,
+        post,
+        slug,
+        path: `/posts/${slug}`,
+      }
+    },
+  },
+}
+```
+
+At build time, White generates a static HTML page for each slug. Locales are configured in `config.js`:
+
+```javascript
+export const LOCALES = ['en']
 ```
 
 ### 🔌 API Routes
