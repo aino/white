@@ -75,7 +75,8 @@ export default function Counter({ value }) {
 
 ```javascript
 // components/Counter/counter.js
-import state from 'src/js/utils/state'
+import state from '@white/utils/state'
+import { q } from '@white/utils/dom'
 
 export default async function counter(node) {
   const initialValue = parseInt(node.dataset.value)
@@ -186,12 +187,48 @@ import 'white/css' // Imports ALL .css files automatically
 
 **Note:** White uses plain CSS only - no SCSS, Less, or CSS modules. Use class-based scoping for component isolation.
 
+### 📐 Dynamic Templates
+
+JSX templates can be imported and called directly in client-side scripts. This lets you re-render components dynamically using the same templates that generated the initial HTML:
+
+```javascript
+// components/UserList/userlist.js
+import state from '@white/utils/state'
+import { UserList } from './index' // Import the JSX template
+
+export default async function userlist(node) {
+  const users = state(
+    JSON.parse(node.dataset.users || '[]'),
+    (items) => {
+      // Call the template function to generate new HTML
+      node.innerHTML = UserList({ items })
+    }
+  )
+
+  const onClick = async (e) => {
+    if (e.target.dataset.load) {
+      const response = await fetch('/api/users')
+      const data = await response.json()
+      users.set(data)
+    }
+  }
+
+  node.addEventListener('click', onClick)
+  return () => {
+    users.destroy()
+    node.removeEventListener('click', onClick)
+  }
+}
+```
+
+Since JSX compiles to plain string-returning functions, they work seamlessly as templates in both server-side rendering and client-side updates.
+
 ### 📊 State Management
 
 Simple state utility for reactive updates:
 
 ```javascript
-import state from 'src/js/utils/state'
+import state from '@white/utils/state'
 
 const count = state(0, (newValue) => {
   element.textContent = newValue
@@ -300,28 +337,37 @@ export default function Cart({ items = [] }) {
 
 ```javascript
 // components/Cart/cart.js
+import state from '@white/utils/state'
+import { q } from '@white/utils/dom'
+import { Cart } from './index' // Import the JSX template for re-rendering
+
 export default async function cart(node) {
-  const items = JSON.parse(node.dataset.items || '[]')
+  const cartState = state(
+    JSON.parse(node.dataset.items || '[]'),
+    (items) => {
+      // Re-render the component using the JSX template
+      node.innerHTML = Cart({ items })
+    }
+  )
 
   const onClick = (e) => {
     if (e.target.dataset.remove) {
-      // Remove item logic
-      updateCart(items.filter((item) => item.id !== e.target.dataset.remove))
-    }
-    if (e.target.dataset.checkout) {
-      // Checkout logic
+      cartState.set((items) =>
+        items.filter((item) => item.id !== e.target.dataset.remove)
+      )
     }
   }
 
   node.addEventListener('click', onClick)
 
   return () => {
+    cartState.destroy()
     node.removeEventListener('click', onClick)
   }
 }
 ```
 
-The cart maintains its state as users navigate between pages - just like a real SPA, but with multi-page app benefits!
+The cart maintains its state as users navigate between pages.
 
 ## Deployment
 

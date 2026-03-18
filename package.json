@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.1",
   "type": "module",
+  "author": "Aino",
   "scripts": {
     "conf": "bun @white/scripts/conf.ts",
     "dev": "vite --port $(bun conf PORT)",
