@@ -2,7 +2,7 @@
 
 Static site generator with **Persistent Component Architecture** - where components can optionally maintain their state across page transitions without any virtual DOM or state management library.
 
-## Displaimer
+## Disclaimer
 
 Don’t use this for production! It’s an Aino experiment in back-to-basics with modern DX.
 
