@@ -37,18 +37,14 @@ Don’t use this for production! It’s an Aino experiment in back-to-basics wit
 Components with `key` attributes maintain their complete state across page navigations:
 
 ```jsx
-// Page 1: User clicks counter to 5
-<Counter key="main-counter" value={1} />
+// Page 1: User clicks counter to 5, then navigates
+<Counter value={1} />
 
-// Navigate to Page 2: Counter still shows 5!
-<Counter key="main-counter" value={1} />
+// Page 2: Counter still shows 5!
+<Counter value={1} />
 ```
 
-Without a key, components are fresh on each page:
-
-```jsx
-<Counter value={1} /> // Always resets to 1
-```
+The `key` attribute is placed on the root element inside the component template (not on the usage site). Components without a `key` are fresh on each page.
 
 ### 🔧 Component Structure
 
@@ -65,7 +61,7 @@ components/Counter/
 // components/Counter/index.jsx
 export default function Counter({ value }) {
   return (
-    <div data-component="counter" data-value={value}>
+    <div data-component="counter" key="counter" data-value={value}>
       <span>{value}</span>
       <button>+</button>
     </div>
