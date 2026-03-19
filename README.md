@@ -34,17 +34,16 @@ Don’t use this for production! It’s an Aino experiment in back-to-basics wit
 
 ### 🎯 Persistent Component Architecture
 
-Components with `key` attributes maintain their complete state across page navigations:
+Two attributes control component behavior:
+
+- **`key`** — Persists the DOM node across page navigations. The physical element (with event listeners and state) is transferred instead of being replaced.
+- **`data-component`** — Mounts a client-side script on the element. The script file name must match the attribute value.
+
+They are independent. A `key`-only element persists without any script. A `data-component`-only element runs a script but resets on every page. Use both together for interactive persistent components:
 
 ```jsx
-// Page 1: User clicks counter to 5, then navigates
-<Counter value={1} />
-
-// Page 2: Counter still shows 5!
-<Counter value={1} />
+<div data-component="counter" key="counter" data-value={value}>
 ```
-
-The `key` attribute is placed on the root element inside the component template (not on the usage site). Components without a `key` are fresh on each page.
 
 ### 🔧 Component Structure
 

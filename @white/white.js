@@ -235,8 +235,7 @@ const fakeState = async (href, trigger) => {
       if (
         newNode &&
         newNode.nodeName === componentNode.nodeName &&
-        newNode.nodeType === componentNode.nodeType &&
-        newNode.dataset.component === componentNode.dataset.component
+        newNode.nodeType === componentNode.nodeType
       ) {
         // Component exists in new DOM - transfer it
         newNode.replaceWith(componentNode)
