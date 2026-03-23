@@ -27,7 +27,16 @@ export default function state(value, onChange) {
         console.warn('assign only works with objects')
         return
       }
-      state.set((prev) => ({ ...prev, ...newValue }))
+      state.set((prev) => {
+        const resolved = {}
+        for (const key in newValue) {
+          resolved[key] =
+            typeof newValue[key] === 'function'
+              ? newValue[key](prev[key])
+              : newValue[key]
+        }
+        return { ...prev, ...resolved }
+      })
     },
 
     destroy() {

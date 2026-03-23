@@ -248,9 +248,14 @@ const count = state(0, (newValue) => {
   element.textContent = newValue
 })
 
-// Update state
+// set — replace the entire value
 count.set(5)
 count.set((prev) => prev + 1)
+
+// assign — partial update for objects, supports function updaters per property
+const user = state({ name: 'Alice', score: 0 })
+user.assign({ score: (prev) => prev + 1 })  // name stays, score increments
+user.assign({ name: 'Bob' })                 // score stays, name replaced
 
 // Subscribe to changes
 const unsubscribe = count.subscribe((newVal, oldVal) => {

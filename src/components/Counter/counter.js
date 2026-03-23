@@ -14,16 +14,10 @@ export default async function counter(node, { on, listen, state }) {
   )
 
   on('click', 'button', () => {
-    dataState.set((prev) => ({
-      ...prev,
-      value: prev.value + 1,
-    }))
+    dataState.assign({ value: (prev) => prev + 1 })
   })
 
   listen(window, 'routechange', (e) => {
-    dataState.set((prev) => ({
-      ...prev,
-      pathname: e.detail.pathname,
-    }))
+    dataState.assign({ pathname: e.detail.pathname })
   })
 }
