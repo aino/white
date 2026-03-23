@@ -6,7 +6,7 @@ export default function Header() {
           White
         </a>
         <div>
-          <a href="/about/">About</a>
+          <a href="/about">About</a>
         </div>
       </nav>
     </header>

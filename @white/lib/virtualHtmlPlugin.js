@@ -138,25 +138,6 @@ export default function virtualHtmlPlugin() {
             return next()
           }
 
-          // In dev mode, redirect non-trailing-slash URLs to trailing-slash URLs
-          // Skip if it's a file with an extension or Vite internal routes
-          const hasExtension = /\.[^/]+$/.test(req.url)
-          const isViteRoute =
-            req.url.startsWith('/@') || req.url.startsWith('/__')
-
-          if (
-            !hasExtension &&
-            !isViteRoute &&
-            !req.url.endsWith('/') &&
-            req.url !== '/'
-          ) {
-            const redirectUrl = req.url + '/'
-            res.writeHead(301, {
-              Location: redirectUrl,
-              'Cache-Control': 'no-cache',
-            })
-            return res.end()
-          }
           let templateContext = await getTemplateContext(req.url)
           if (!templateContext) {
             templateContext = await getTemplateContext(getLocalized404(req.url))
@@ -166,7 +147,11 @@ export default function virtualHtmlPlugin() {
           }
           const { templatePath, data } = templateContext
           let html = await compileTemplate(templatePath, data, server)
-          html = await server.transformIndexHtml(req.url, html)
+          // Vite's transformIndexHtml requires trailing slash to correctly resolve
+          // HTML proxy modules for inline scripts. Normalize here so the actual
+          // URL in the browser stays clean (no trailing slash).
+          const viteUrl = req.url.endsWith('/') ? req.url : req.url + '/'
+          html = await server.transformIndexHtml(viteUrl, html)
           res.setHeader('Content-Type', 'text/html')
           res.end(html)
         } catch (err) {

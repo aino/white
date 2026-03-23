@@ -70,50 +70,47 @@ export default function Counter({ value }) {
 
 ```javascript
 // components/Counter/counter.js
-import state from '@white/utils/state'
-import { q } from '@white/utils/dom'
-
-export default async function counter(node) {
+export default async function counter(node, { on, state }) {
   const initialValue = parseInt(node.dataset.value)
-  const [span, button] = q('span, button', node)
 
   const count = state(initialValue, (value) => {
-    span.textContent = value
+    node.querySelector('span').textContent = value
   })
 
-  const onClick = () => count.set((c) => c + 1)
-  button.addEventListener('click', onClick)
-
-  return () => {
-    // Cleanup when component unmounts
-    count.destroy()
-    button.removeEventListener('click', onClick)
-  }
+  on('click', 'button', () => count.set((c) => c + 1))
 }
 ```
 
-### 🧹 Cleanup Functions
+### 🧹 Lifecycle Context
 
-Both component scripts and page scripts return a **destroy function**. White calls this automatically when the component is removed from the DOM or when the user navigates away from a page:
+Both component scripts and page scripts receive a **lifecycle context** as a second argument. The context provides helpers that automatically clean up when the component unmounts or the user navigates away:
 
 ```javascript
-export default async function myComponent(node) {
-  // Setup: runs when component mounts
-  const interval = setInterval(tick, 1000)
-  node.addEventListener('click', onClick)
+export default async function myComponent(node, { on, listen, state, onCleanup }) {
+  // on(event, selector, handler) — delegated event listener on the component root
+  on('click', 'button', (e, target) => { ... })
 
-  // Return a cleanup function
-  return () => {
-    // Teardown: runs when component unmounts or page changes
-    clearInterval(interval)
-    node.removeEventListener('click', onClick)
-  }
+  // listen(target, event, handler, options?) — direct listener on any target, auto-cleaned
+  listen(window, 'resize', (e) => { ... })
+
+  // state(initial, onChange?) — reactive state, auto-destroyed
+  const count = state(0, (value) => { ... })
+
+  // onCleanup(fn) — escape hatch for anything else (timers, subscriptions)
+  const interval = setInterval(tick, 1000)
+  onCleanup(() => clearInterval(interval))
 }
 ```
 
-This prevents memory leaks and stale event listeners. Every `addEventListener` should have a matching `removeEventListener` in the cleanup. Every `state()` should call `.destroy()`. Every timer should be cleared.
+No manual cleanup needed — the framework handles teardown automatically.
 
-**Persistent components** (those with a `key` attribute) are only cleaned up when they no longer appear in the next page's DOM. If the component exists on both pages, it is physically transferred and the destroy function is *not* called.
+**`on`** delegates events to the component root node. Since the listener lives on the stable `data-component` element, it survives `innerHTML` re-renders of the component's children. Use bubbling equivalents for non-bubbling events (`focusin`/`focusout` instead of `focus`/`blur`).
+
+**`listen`** attaches a direct event listener on any target. Use it for `window`, `document`, or specific DOM nodes.
+
+**Legacy pattern:** Returning a cleanup function still works for backward compatibility. The framework merges it with any context-based cleanups.
+
+**Persistent components** (those with a `key` attribute) are only cleaned up when they no longer appear in the next page's DOM. If the component exists on both pages, it is physically transferred and the cleanup is _not_ called.
 
 ### 📁 Pages & Routing
 
@@ -202,12 +199,11 @@ You can customize `pageTransition` to add animations, fade effects, etc. The `ol
 // pages/about/about.js (auto-loaded for /about route)
 export const path = /^\/about/ // Matches /about pages
 
-export default function about(app) {
+export default function about(app, { on, listen, state, onCleanup }) {
   console.log('About page loaded')
 
-  return () => {
-    // Cleanup when leaving page
-  }
+  // Same lifecycle context as components — scoped to #app
+  on('click', '[data-toggle]', (e, target) => { ... })
 }
 ```
 
@@ -221,39 +217,29 @@ JSX templates can be imported and called directly in client-side scripts. This l
 
 ```javascript
 // components/UserList/userlist.js
-import state from '@white/utils/state'
 import { UserList } from './index' // Import the JSX template
 
-export default async function userlist(node) {
-  const users = state(
-    JSON.parse(node.dataset.users || '[]'),
-    (items) => {
-      // Call the template function to generate new HTML
-      node.innerHTML = UserList({ items })
-    }
-  )
+export default async function userlist(node, { on, state }) {
+  const users = state(JSON.parse(node.dataset.users || '[]'), (items) => {
+    // Call the template function to generate new HTML
+    node.innerHTML = UserList({ items })
+  })
 
-  const onClick = async (e) => {
-    if (e.target.dataset.load) {
-      const response = await fetch('/api/users')
-      const data = await response.json()
-      users.set(data)
-    }
-  }
-
-  node.addEventListener('click', onClick)
-  return () => {
-    users.destroy()
-    node.removeEventListener('click', onClick)
-  }
+  on('click', '[data-load]', async () => {
+    const response = await fetch('/api/users')
+    const data = await response.json()
+    users.set(data)
+  })
 }
 ```
 
 Since JSX compiles to plain string-returning functions, they work seamlessly as templates in both server-side rendering and client-side updates.
 
+**Important:** Export the inner content as a separate function and use that for client-side re-renders. The default export includes the `data-component` wrapper — re-rendering with it would replace the stable root node and break event delegation via `on`. Use `node.innerHTML` with the inner function only.
+
 ### 📊 State Management
 
-Simple state utility for reactive updates:
+Simple state utility for reactive updates. Inside components, use `state` from the lifecycle context (auto-destroyed on unmount). Outside components, import it directly:
 
 ```javascript
 import state from '@white/utils/state'
@@ -412,33 +398,23 @@ export default function Cart({ items = [] }) {
 
 ```javascript
 // components/Cart/cart.js
-import state from '@white/utils/state'
-import { q } from '@white/utils/dom'
 import { Cart } from './index' // Import the JSX template for re-rendering
 
-export default async function cart(node) {
-  const cartState = state(
-    JSON.parse(node.dataset.items || '[]'),
-    (items) => {
-      // Re-render the component using the JSX template
-      node.innerHTML = Cart({ items })
-    }
-  )
+export default async function cart(node, { on, state }) {
+  const cartState = state(JSON.parse(node.dataset.items || '[]'), (items) => {
+    // Re-render the component using the JSX template
+    node.innerHTML = Cart({ items })
+  })
 
-  const onClick = (e) => {
-    if (e.target.dataset.remove) {
-      cartState.set((items) =>
-        items.filter((item) => item.id !== e.target.dataset.remove)
-      )
-    }
-  }
+  on('click', '[data-remove]', (e, target) => {
+    cartState.set((items) =>
+      items.filter((item) => item.id !== target.dataset.remove)
+    )
+  })
 
-  node.addEventListener('click', onClick)
-
-  return () => {
-    cartState.destroy()
-    node.removeEventListener('click', onClick)
-  }
+  on('click', '[data-checkout]', () => {
+    // Handle checkout
+  })
 }
 ```
 

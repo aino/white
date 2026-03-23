@@ -7,7 +7,8 @@ import { LOCALES } from 'src/config'
 import 'src/styles/main.css'
 import 'white/css'
 
-import { addTrailingSlash, removeTrailingSlash } from './utils/string'
+import { removeTrailingSlash } from './utils/string'
+import createContext from './utils/context'
 
 export const cachedPages = new Map()
 
@@ -15,7 +16,6 @@ export const config = {
   fakeSPA: true,
 }
 
-const isDev = import.meta.env.DEV || location.hostname === 'localhost'
 
 const pathnameWithoutLocale = (pathname) => {
   const pathnameLocale = pathname.split('/').filter(Boolean)[0]
@@ -26,7 +26,7 @@ const pathnameWithoutLocale = (pathname) => {
 }
 
 const fetchHtml = async (pathname) => {
-  const response = await fetch(isDev ? addTrailingSlash(pathname) : pathname, {
+  const response = await fetch(pathname, {
     headers: {
       Accept: 'text/html',
     },
@@ -60,7 +60,13 @@ const runScripts = (() => {
     const parsedPathname =
       removeTrailingSlash(pathnameWithoutLocale(pathname)) || '/'
     for (const { fn } of runners.filter((p) => p.path.test(parsedPathname))) {
-      destroyers.push(await fn(app))
+      const { ctx, cleanup } = createContext(app)
+      const result = await fn(app, ctx)
+      if (typeof result === 'function') {
+        destroyers.push(() => { cleanup(); result() })
+      } else {
+        destroyers.push(cleanup)
+      }
     }
   }
 })()
@@ -76,9 +82,14 @@ const mountComponents = async (container) => {
     const componentScript = components[componentName]
 
     if (componentScript && !mountedComponents.has(node)) {
+      const { ctx, cleanup } = createContext(node)
       try {
-        const cleanup = await componentScript(node)
-        mountedComponents.set(node, cleanup)
+        const result = await componentScript(node, ctx)
+        if (typeof result === 'function') {
+          mountedComponents.set(node, () => { cleanup(); result() })
+        } else {
+          mountedComponents.set(node, cleanup)
+        }
       } catch (error) {
         console.error(`Failed to mount component ${componentName}:`, error)
       }
@@ -87,10 +98,11 @@ const mountComponents = async (container) => {
 }
 
 const prefetchLink = (link) => {
-  if (!cachedPages.has(link.pathname) && location.pathname !== link.pathname) {
-    fetchHtml(link.pathname)
+  const pathname = removeTrailingSlash(link.pathname) || '/'
+  if (!cachedPages.has(pathname) && location.pathname !== pathname) {
+    fetchHtml(pathname)
       .then((html) => {
-        cachedPages.set(link.pathname, html)
+        cachedPages.set(pathname, html)
         const parser = new DOMParser()
         const doc = parser.parseFromString(html, 'text/html')
         const images = doc.querySelectorAll('img')
@@ -117,9 +129,8 @@ const onLinkClick = (e) => {
   if (!history.pushState || hostname !== location.hostname) {
     return
   }
-  const nextHref = `${
-    isDev ? addTrailingSlash(pathname) : pathname
-  }${search}${hash}`
+  const normalizedPath = removeTrailingSlash(pathname) || '/'
+  const nextHref = `${normalizedPath}${search}${hash}`
   e.preventDefault()
   history.pushState(null, '', nextHref)
 }

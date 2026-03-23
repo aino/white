@@ -12,7 +12,7 @@ export default function Post({ title, locale, path, slug, post }) {
       </p>
       <Counter value={0} pathname={path} />
       <p>
-        <a href="/about/">← About</a>
+        <a href="/about">← About</a>
       </p>
     </Layout>
   )

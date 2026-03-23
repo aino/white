@@ -1,8 +1,6 @@
-import state from '@white/utils/state'
 import { CounterContent } from './index'
 
-export default async function counter(node) {
-  const destroyers = []
+export default async function counter(node, { on, listen, state }) {
   const { value, pathname } = node.dataset
 
   const dataState = state(
@@ -14,31 +12,18 @@ export default async function counter(node) {
       node.innerHTML = CounterContent(props)
     }
   )
-  destroyers.push(() => dataState.destroy())
 
-  const onClick = (e) => {
-    if (!e.target.closest('button')) return
+  on('click', 'button', () => {
     dataState.set((prev) => ({
       ...prev,
       value: prev.value + 1,
     }))
-  }
-  node.addEventListener('click', onClick)
-  destroyers.push(() => node.removeEventListener('click', onClick))
+  })
 
-  // Listen for route changes to update the displayed pathname
-  const onRouteChange = (e) => {
+  listen(window, 'routechange', (e) => {
     dataState.set((prev) => ({
       ...prev,
       pathname: e.detail.pathname,
     }))
-  }
-  window.addEventListener('routechange', onRouteChange)
-  destroyers.push(() =>
-    window.removeEventListener('routechange', onRouteChange)
-  )
-
-  return () => {
-    destroyers.forEach((destroy) => destroy())
-  }
+  })
 }

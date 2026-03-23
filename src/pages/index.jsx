@@ -14,13 +14,13 @@ export default function Home({ locale, path }) {
         <h2>Pages</h2>
         <ul>
           <li>
-            <a href="/about/">About (static page)</a>
+            <a href="/about">About (static page)</a>
           </li>
           <li>
-            <a href="/about/hello-world/">Hello World (dynamic slug)</a>
+            <a href="/about/hello-world">Hello World (dynamic slug)</a>
           </li>
           <li>
-            <a href="/about/getting-started/">Getting Started (dynamic slug)</a>
+            <a href="/about/getting-started">Getting Started (dynamic slug)</a>
           </li>
         </ul>
       </nav>
