@@ -87,7 +87,7 @@ export default function virtualHtmlPlugin() {
     configureServer(server) {
       // Serve translation files for client-side t()
       server.middlewares.use((req, res, next) => {
-        const match = req.url?.match(/^\/assets\/translations\/(\w+)\.json$/)
+        const match = req.url?.match(/^\/assets\/translations\/([\w-]+)\.json$/)
         if (match) {
           const filePath = resolve(__dirname, `../../.white/translations/${match[1]}.json`)
           try {
