@@ -19,6 +19,7 @@ const step = (msg) => console.log(`\n→ ${msg}`)
 const run = (cmd, opts) => execSync(cmd, { stdio: 'inherit', cwd: ROOT, ...opts })
 const out = (cmd) => execSync(cmd, { encoding: 'utf-8', cwd: ROOT }).trim()
 
+const start = Date.now()
 console.log(`\nDeploying ${clientName} → ${client.distributionId}`)
 
 // Build
@@ -68,4 +69,5 @@ step('Waiting for CloudFront propagation (~3-5 min)')
 run(`aws cloudfront wait distribution-deployed --id ${client.distributionId}`)
 run(`aws cloudfront create-invalidation --distribution-id ${client.distributionId} --paths "/*" --no-cli-pager > /dev/null`)
 
-console.log(`\n✅ ${clientName} deployed`)
+const duration = ((Date.now() - start) / 1000).toFixed(0)
+console.log(`\n✅ ${clientName} deployed in ${duration}s`)
