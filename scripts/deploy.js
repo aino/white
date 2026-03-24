@@ -96,6 +96,10 @@ writeFileSync('/tmp/cf-update.json', JSON.stringify(distConfig))
 
 run(`aws cloudfront update-distribution --id ${client.distributionId} --distribution-config file:///tmp/cf-update.json --if-match ${etag} --output text --query "Distribution.Status"`)
 
+// Wait for CloudFront to finish deploying the new config
+console.log('Waiting for CloudFront deployment...')
+run(`aws cloudfront wait distribution-deployed --id ${client.distributionId}`)
+
 // 6. Invalidate CloudFront cache
 run(`aws cloudfront create-invalidation --distribution-id ${client.distributionId} --paths "/*" --query "Invalidation.Id" --output text`)
 
