@@ -116,6 +116,13 @@
       "value": "Ich bin ein Junge",
       "status": "auto",
       "sourceHash": "e912f604"
+    },
+    {
+      "id": "9fd507d4",
+      "source": "I am a girl",
+      "value": "Ich bin ein Mädchen",
+      "status": "auto",
+      "sourceHash": "a28b8335"
     }
   ],
   "CounterContent": [

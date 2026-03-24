@@ -104,6 +104,13 @@
       "value": "Olen poika",
       "status": "auto",
       "sourceHash": "e912f604"
+    },
+    {
+      "id": "9fd507d4",
+      "source": "I am a girl",
+      "value": "Olen tyttö",
+      "status": "auto",
+      "sourceHash": "a28b8335"
     }
   ],
   "CounterContent": [
