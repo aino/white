@@ -138,41 +138,13 @@ export class WhiteIsrStack extends cdk.Stack {
       },
     })
 
-    // Revalidation Lambda — clears S3 HTML + invalidates CloudFront
+    // Revalidation Lambda — invalidates CloudFront cache
     const revalidateFunction = new lambda.Function(this, 'RevalidateHandler', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
       code: lambda.Code.fromInline(`
-const { S3Client, ListObjectsV2Command, DeleteObjectsCommand } = require("@aws-sdk/client-s3");
 const { CloudFrontClient, CreateInvalidationCommand } = require("@aws-sdk/client-cloudfront");
-
-const s3 = new S3Client({ region: "us-east-1" });
 const cf = new CloudFrontClient({ region: "us-east-1" });
-
-async function deleteAllHtml(bucket) {
-  let deleted = 0;
-  let token;
-  do {
-    const list = await s3.send(new ListObjectsV2Command({ Bucket: bucket, ContinuationToken: token }));
-    const htmlObjects = (list.Contents || []).filter(o => o.Key.endsWith(".html"));
-    if (htmlObjects.length > 0) {
-      await s3.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: htmlObjects.map(o => ({ Key: o.Key })) } }));
-      deleted += htmlObjects.length;
-    }
-    token = list.NextContinuationToken;
-  } while (token);
-  return deleted;
-}
-
-async function deletePaths(bucket, paths) {
-  const keys = paths.map(p => {
-    const clean = p.replace(/^\\//, "").replace(/\\/$/, "");
-    return clean ? clean + "/index.html" : "index.html";
-  });
-  if (keys.length === 0) return 0;
-  await s3.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: keys.map(Key => ({ Key })) } }));
-  return keys.length;
-}
 
 exports.handler = async (event) => {
   const body = JSON.parse(event.body || "{}");
@@ -180,16 +152,11 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
   }
 
-  const bucket = process.env.BUCKET;
   const distributionId = process.env.DISTRIBUTION_ID;
   const paths = body.paths;
 
-  // Delete HTML: specific paths or all
-  const deleted = paths && paths.length > 0
-    ? await deletePaths(bucket, paths)
-    : await deleteAllHtml(bucket);
-
-  // Invalidate CloudFront: specific paths or all
+  // Invalidate specific paths or everything
+  // Supports wildcards: /products/*, /*/products/hello-world, /*
   const cfPaths = paths && paths.length > 0
     ? paths.map(p => p.startsWith("/") ? p : "/" + p)
     : ["/*"];
@@ -205,20 +172,17 @@ exports.handler = async (event) => {
   return {
     statusCode: 200,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ok: true, deleted, invalidationId: inv.Invalidation.Id, paths: cfPaths }),
+    body: JSON.stringify({ ok: true, invalidationId: inv.Invalidation.Id, paths: cfPaths }),
   };
 };
       `),
       environment: {
-        BUCKET: bucket.bucketName,
         DISTRIBUTION_ID: distribution.distributionId,
         REVALIDATE_SECRET: revalidateSecret,
       },
-      timeout: cdk.Duration.seconds(30),
+      timeout: cdk.Duration.seconds(10),
     })
 
-    // Grant revalidation Lambda access to S3 and CloudFront
-    bucket.grantReadWrite(revalidateFunction)
     revalidateFunction.addToRolePolicy(
       new iam.PolicyStatement({
         actions: ['cloudfront:CreateInvalidation'],
