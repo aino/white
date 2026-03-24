@@ -12,7 +12,7 @@ async function loadTemplates() {
 
 export const GET = async (req) => {
   const url = new URL(req.url)
-  const path = url.pathname.replace(/\/$/, '') || '/'
+  const path = url.pathname.replace(/^\/api/, '').replace(/\/$/, '') || '/'
 
   const registry = await loadTemplates()
 
