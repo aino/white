@@ -3,3 +3,4 @@ dist
 cdk.out
 lambda/bundle/*
 !lambda/bundle/.gitkeep
+lambda/_templates

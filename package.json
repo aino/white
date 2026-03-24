@@ -11,6 +11,7 @@
     "dev:api": "bun --bun run dev & bun --bun run api & wait",
     "build": "vite build",
     "build:templates": "node scripts/compile-templates.js",
+    "build:lambda": "node scripts/bundle-lambda.js",
     "start": "node @white/lib/previewServer.js",
     "lint": "eslint ."
   },
