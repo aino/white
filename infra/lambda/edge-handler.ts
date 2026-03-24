@@ -34,13 +34,15 @@ export async function handler(event: any) {
   const html = await renderPage(path)
 
   if (!html) {
+    // Try rendering the 404 template
+    const notFoundHtml = await renderPage('/404')
     return {
       status: '404',
       statusDescription: 'Not Found',
       headers: {
         'content-type': [{ value: 'text/html' }],
       },
-      body: '<html><body><h1>404 — Not Found</h1></body></html>',
+      body: notFoundHtml ? injectAssets(notFoundHtml) : '<html><body><h1>404 — Not Found</h1></body></html>',
     }
   }
 
