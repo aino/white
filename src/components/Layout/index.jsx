@@ -9,7 +9,6 @@ export default function Layout({
   description,
   image,
   path, // eslint-disable-line no-unused-vars
-  timestamp,
 }) {
   const siteName = 'White'
 
@@ -66,7 +65,7 @@ export default function Layout({
       <body class={bodyclass}>
         <Header />
         <main id="app">{children}</main>
-        <Footer timestamp={timestamp} />
+        <Footer />
       </body>
     </html>
   )

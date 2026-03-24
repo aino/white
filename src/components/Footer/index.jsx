@@ -1,7 +1,7 @@
-export default function Footer({ timestamp }) {
+export default function Footer() {
   return (
     <footer data-component="footer">
-      <p>Built with White{timestamp && ` · Rendered at ${timestamp}`}</p>
+      <p>Built with White</p>
     </footer>
   )
 }
