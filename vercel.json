@@ -1,6 +1,6 @@
 {
   "framework": "vite",
-  "buildCommand": "npm run build && npm run build:templates && find dist -name '*.html' -delete",
+  "buildCommand": "npm run build && npm run build:templates && rm -f dist/*.html dist/**/*.html",
   "outputDirectory": "dist",
   "images": {
     "domains": [],
