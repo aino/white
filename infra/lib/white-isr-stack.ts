@@ -17,13 +17,14 @@ export interface WhiteIsrProps extends cdk.StackProps {
   domain?: string
   alternativeDomains?: string[]
   vercelUrl: string
+  revalidateSecret: string
 }
 
 export class WhiteIsrStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: WhiteIsrProps) {
     super(scope, id, props)
 
-    const { clientName, domain, alternativeDomains = [], vercelUrl } = props
+    const { clientName, domain, alternativeDomains = [], vercelUrl, revalidateSecret } = props
 
     // S3 bucket for HTML pages and static assets
     const bucket = new s3.Bucket(this, 'Pages', {
@@ -188,7 +189,7 @@ exports.handler = async (event) => {
       environment: {
         BUCKET: bucket.bucketName,
         DISTRIBUTION_ID: distribution.distributionId,
-        REVALIDATE_SECRET: 'white-revalidate-2026', // Change per client
+        REVALIDATE_SECRET: revalidateSecret,
       },
       timeout: cdk.Duration.seconds(30),
     })
@@ -231,6 +232,11 @@ exports.handler = async (event) => {
     new cdk.CfnOutput(this, 'RevalidateUrl', {
       value: `${api.url}revalidate`,
       description: 'POST to this URL with { "secret": "..." } to purge all cached pages',
+    })
+
+    new cdk.CfnOutput(this, 'RevalidateSecret', {
+      value: revalidateSecret,
+      description: 'Secret for the revalidation webhook',
     })
   }
 }

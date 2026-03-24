@@ -14,12 +14,14 @@ if (!clientName || !vercelUrl) {
 
 const domain = app.node.tryGetContext('domain')
 const alternativeDomains = app.node.tryGetContext('alternativeDomains')
+const revalidateSecret = app.node.tryGetContext('revalidateSecret') || `white-${clientName}-${Date.now()}`
 
 new WhiteIsrStack(app, `white-isr-${clientName}`, {
   clientName,
   domain: domain || undefined,
   alternativeDomains: alternativeDomains?.split(','),
   vercelUrl,
+  revalidateSecret,
   env: {
     account: process.env.CDK_DEFAULT_ACCOUNT,
     region: 'us-east-1',
