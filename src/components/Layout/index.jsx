@@ -11,10 +11,8 @@ export default function Layout({
   path, // eslint-disable-line no-unused-vars
 }) {
   const siteName = 'White'
-  const [language] = locale.split('-')
-
   return (
-    <html lang={language || 'en'} data-component="layout">
+    <html lang={(locale || 'en').split('-')[0]} data-locale={locale || 'en'} data-component="layout">
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
