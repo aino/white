@@ -223,22 +223,7 @@ async function callAI(locale, strings) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk')
   const client = new Anthropic({ apiKey })
 
-  const localeNames = {
-    fi: 'Finnish',
-    sv: 'Swedish',
-    de: 'German',
-    fr: 'French',
-    es: 'Spanish',
-    it: 'Italian',
-    nl: 'Dutch',
-    pt: 'Portuguese',
-    da: 'Danish',
-    nb: 'Norwegian',
-    ja: 'Japanese',
-    ko: 'Korean',
-    zh: 'Chinese (Simplified)',
-  }
-  const localeName = localeNames[locale] || locale
+  const localeName = locale
 
   const numbered = strings.map((s, i) => `${i + 1}. ${JSON.stringify(s)}`).join('\n')
 
