@@ -149,18 +149,7 @@ const { CloudFrontClient, CreateInvalidationCommand } = require("@aws-sdk/client
 const s3 = new S3Client({ region: "us-east-1" });
 const cf = new CloudFrontClient({ region: "us-east-1" });
 
-exports.handler = async (event) => {
-  const body = JSON.parse(event.body || "{}");
-  const secret = process.env.REVALIDATE_SECRET;
-
-  if (body.secret !== secret) {
-    return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
-  }
-
-  const bucket = process.env.BUCKET;
-  const distributionId = process.env.DISTRIBUTION_ID;
-
-  // Delete all HTML files from S3
+async function deleteAllHtml(bucket) {
   let deleted = 0;
   let token;
   do {
@@ -172,17 +161,51 @@ exports.handler = async (event) => {
     }
     token = list.NextContinuationToken;
   } while (token);
+  return deleted;
+}
 
-  // Invalidate CloudFront
+async function deletePaths(bucket, paths) {
+  const keys = paths.map(p => {
+    const clean = p.replace(/^\\//, "").replace(/\\/$/, "");
+    return clean ? clean + "/index.html" : "index.html";
+  });
+  if (keys.length === 0) return 0;
+  await s3.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: keys.map(Key => ({ Key })) } }));
+  return keys.length;
+}
+
+exports.handler = async (event) => {
+  const body = JSON.parse(event.body || "{}");
+  if (body.secret !== process.env.REVALIDATE_SECRET) {
+    return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+  }
+
+  const bucket = process.env.BUCKET;
+  const distributionId = process.env.DISTRIBUTION_ID;
+  const paths = body.paths;
+
+  // Delete HTML: specific paths or all
+  const deleted = paths && paths.length > 0
+    ? await deletePaths(bucket, paths)
+    : await deleteAllHtml(bucket);
+
+  // Invalidate CloudFront: specific paths or all
+  const cfPaths = paths && paths.length > 0
+    ? paths.map(p => p.startsWith("/") ? p : "/" + p)
+    : ["/*"];
+
   const inv = await cf.send(new CreateInvalidationCommand({
     DistributionId: distributionId,
-    InvalidationBatch: { Paths: { Quantity: 1, Items: ["/*"] }, CallerReference: Date.now().toString() },
+    InvalidationBatch: {
+      Paths: { Quantity: cfPaths.length, Items: cfPaths },
+      CallerReference: Date.now().toString(),
+    },
   }));
 
   return {
     statusCode: 200,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ok: true, deleted, invalidationId: inv.Invalidation.Id }),
+    body: JSON.stringify({ ok: true, deleted, invalidationId: inv.Invalidation.Id, paths: cfPaths }),
   };
 };
       `),
