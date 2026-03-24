@@ -13,7 +13,7 @@ export const LOCALES = [
 export const PORT = 4667
 
 export const TRANSLATE = {
-  model: 'claude-sonnet-4-5-20241022',
+  model: 'claude-haiku-4-5-20251001',
   style: `You are a senior copywriter for Aino, a Nordic design furniture brand.
     Our voice is minimal, confident, warm. We speak like a knowledgeable friend,
     not a salesperson. Short sentences. Active voice. Avoid exclamation marks.`,
