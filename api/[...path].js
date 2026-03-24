@@ -1,19 +1,18 @@
-import { getPageContext } from '../../lambda/getPageContext.js'
-import { globalData, routes } from '../../src/data.config.js'
-import { LOCALES } from '../../src/config.js'
+import { getPageContext } from '../lambda/getPageContext.js'
+import { globalData, routes } from '../src/data.config.js'
+import { LOCALES } from '../src/config.js'
 
 let templates = null
 
 async function loadTemplates() {
   if (templates) return templates
-  templates = (await import('../../dist/templates/registry.js')).default
+  templates = (await import('../dist/templates/registry.js')).default
   return templates
 }
 
 export const GET = async (req) => {
   const url = new URL(req.url)
-  const path =
-    url.pathname.replace(/^\/api\/render/, '').replace(/\/$/, '') || '/'
+  const path = url.pathname.replace(/\/$/, '') || '/'
 
   const registry = await loadTemplates()
 
@@ -47,7 +46,6 @@ export const GET = async (req) => {
     return new Response('Template not found', { status: 500 })
   }
 
-  context.data.timestamp = new Date().toISOString()
   const html = '<!DOCTYPE html>' + Template(context.data)
 
   return new Response(html, {
