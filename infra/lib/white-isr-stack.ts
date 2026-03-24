@@ -4,7 +4,6 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront'
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins'
 import * as acm from 'aws-cdk-lib/aws-certificatemanager'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
-import * as iam from 'aws-cdk-lib/aws-iam'
 import { Construct } from 'constructs'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
@@ -13,7 +12,7 @@ const __dirname = path.dirname(fileURLToPath(import.meta.url))
 
 export interface WhiteIsrProps extends cdk.StackProps {
   clientName: string
-  domain: string
+  domain?: string
   alternativeDomains?: string[]
   vercelUrl: string
 }
@@ -23,7 +22,6 @@ export class WhiteIsrStack extends cdk.Stack {
     super(scope, id, props)
 
     const { clientName, domain, alternativeDomains = [], vercelUrl } = props
-    const allDomains = [domain, ...alternativeDomains]
 
     // S3 bucket for HTML pages and static assets
     const bucket = new s3.Bucket(this, 'Pages', {
@@ -32,14 +30,17 @@ export class WhiteIsrStack extends cdk.Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     })
 
-    // SSL certificate (must be us-east-1 for CloudFront)
-    const certificate = new acm.Certificate(this, 'Certificate', {
-      domainName: domain,
-      subjectAlternativeNames: alternativeDomains.length > 0
-        ? alternativeDomains
-        : [`*.${domain}`],
-      validation: acm.CertificateValidation.fromDns(),
-    })
+    // SSL certificate (only if custom domain is provided)
+    let certificate: acm.ICertificate | undefined
+    if (domain) {
+      certificate = new acm.Certificate(this, 'Certificate', {
+        domainName: domain,
+        subjectAlternativeNames: alternativeDomains.length > 0
+          ? alternativeDomains
+          : [`*.${domain}`],
+        validation: acm.CertificateValidation.fromDns(),
+      })
+    }
 
     // Lambda@Edge for on-demand page building
     const edgeFunction = new cloudfront.experimental.EdgeFunction(this, 'IsrHandler', {
@@ -86,9 +87,12 @@ export class WhiteIsrStack extends cdk.Stack {
       cookieBehavior: cloudfront.OriginRequestCookieBehavior.all(),
     })
 
+    // Domain config — only if custom domain provided
+    const domainNames = domain ? [domain, ...alternativeDomains] : undefined
+
     // CloudFront distribution
     const distribution = new cloudfront.Distribution(this, 'CDN', {
-      domainNames: allDomains,
+      domainNames,
       certificate,
       defaultRootObject: 'index.html',
 
@@ -134,7 +138,7 @@ export class WhiteIsrStack extends cdk.Stack {
     // Outputs
     new cdk.CfnOutput(this, 'DistributionDomain', {
       value: distribution.distributionDomainName,
-      description: 'Point your DNS CNAME to this domain',
+      description: 'CloudFront distribution URL (use this for testing without custom domain)',
     })
 
     new cdk.CfnOutput(this, 'DistributionId', {

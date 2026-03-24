@@ -12,6 +12,7 @@
     "build": "vite build",
     "build:templates": "node scripts/compile-templates.js",
     "build:lambda": "node scripts/bundle-lambda.js",
+    "build:all": "npm run build && npm run build:templates",
     "start": "node @white/lib/previewServer.js",
     "lint": "eslint ."
   },

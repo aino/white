@@ -1,10 +1,17 @@
 import { build } from 'esbuild'
 import { resolve } from 'path'
-import { cpSync, existsSync } from 'fs'
+import { cpSync, existsSync, readFileSync, writeFileSync } from 'fs'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const OUT_DIR = resolve(ROOT, 'infra/lambda/bundle')
 const TEMPLATES_DIR = resolve(ROOT, 'dist/templates')
+
+// Bucket name passed as CLI arg: node scripts/bundle-lambda.js white-isr-client-name
+const bucketName = process.argv[2]
+if (!bucketName) {
+  console.error('Usage: node scripts/bundle-lambda.js <bucket-name>')
+  process.exit(1)
+}
 
 // Verify templates are compiled
 if (!existsSync(resolve(TEMPLATES_DIR, 'registry.js'))) {
@@ -68,4 +75,8 @@ await build({
   ],
 })
 
-console.log(`Lambda bundle written to ${OUT_DIR}/index.js`)
+// Inject bucket name into the bundle
+const bundle = readFileSync(resolve(OUT_DIR, 'index.js'), 'utf-8')
+writeFileSync(resolve(OUT_DIR, 'index.js'), bundle.replace('__BUCKET_NAME__', bucketName))
+
+console.log(`Lambda bundle written to ${OUT_DIR}/index.js (bucket: ${bucketName})`)
