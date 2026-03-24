@@ -3,6 +3,7 @@ export function CounterContent({ value, pathname }) {
     <>
       <span class="counter-value">{value}</span>
       <button translate>Add</button>
+      <span class="counter-status" translate>Counter is empty</span>
       <p class="counter-pathname" translate>
         Current path: <span class="pathname">{pathname}</span>
       </p>

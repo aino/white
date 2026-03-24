@@ -93,6 +93,7 @@ async function discoverStrings() {
   })
 
   const allStrings = new Set()
+  const pageContexts = [] // { url, html, strings } for AI context
   const urls = await resolveAllUrls()
 
   for (const url of urls) {
@@ -123,16 +124,20 @@ async function discoverStrings() {
     // Set context with empty translations so all translate strings get collected
     setTranslationContext('__collect__', SOURCE_LOCALE, {})
 
+    let html = ''
     try {
       const mod = await vite.ssrLoadModule(jsxPath)
       if (mod.default) {
-        mod.default(data)
+        html = mod.default(data) || ''
       }
     } catch (err) {
       console.warn(`  Warning: could not render ${url}: ${err.message}`)
     }
 
     const untranslated = clearTranslationContext()
+    if (untranslated.size > 0) {
+      pageContexts.push({ url, html, strings: [...untranslated] })
+    }
     for (const s of untranslated) allStrings.add(s)
   }
 
@@ -142,11 +147,11 @@ async function discoverStrings() {
   const tCallStrings = await discoverTCalls()
   for (const s of tCallStrings) allStrings.add(s)
 
-  return allStrings
+  return { strings: allStrings, pageContexts }
 }
 
 // Phase 2: For each target locale, diff and translate missing strings
-async function translateLocale(locale, strings, existing) {
+async function translateLocale(locale, strings, existing, pageContexts) {
   const updated = { ...existing }
   const toTranslate = []
   const warnings = []
@@ -182,8 +187,11 @@ async function translateLocale(locale, strings, existing) {
 
   console.log(`  ${locale}: ${toTranslate.length} strings need translation`)
 
-  // Call AI
-  const translations = await callAI(locale, toTranslate)
+  // Call AI with full page HTML as context
+  const relevantPages = pageContexts?.filter((p) =>
+    p.strings.some((s) => toTranslate.includes(s))
+  )
+  const translations = await callAI(locale, toTranslate, relevantPages)
 
   if (translations) {
     for (const source of toTranslate) {
@@ -213,7 +221,7 @@ async function translateLocale(locale, strings, existing) {
   return updated
 }
 
-async function callAI(locale, strings) {
+async function callAI(locale, strings, pageContexts) {
   const apiKey = process.env.ANTHROPIC_API_KEY
   if (!apiKey) {
     console.log(`    No ANTHROPIC_API_KEY — skipping AI translation`)
@@ -223,33 +231,51 @@ async function callAI(locale, strings) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk')
   const client = new Anthropic({ apiKey })
 
-  const localeName = locale
-
-  const numbered = strings.map((s, i) => `${i + 1}. ${JSON.stringify(s)}`).join('\n')
-
+  const model = TRANSLATE?.model || 'claude-haiku-4-5-20251001'
   const style = TRANSLATE?.style
   const keep = TRANSLATE?.keep
 
-  let rules = `- Preserve ALL HTML tags exactly as-is (only translate text content between tags)
-- Return ONLY a JSON object mapping each English string to its ${localeName} translation
+  const numbered = strings.map((s, i) => `${i + 1}. ${JSON.stringify(s)}`).join('\n')
+
+  // Parse BCP 47 locale: language-REGION
+  const [lang, region] = locale.split('-')
+  const localeDesc = region ? `${locale} (language: ${lang}, region: ${region})` : locale
+
+  let rules = `- The target locale is ${localeDesc}. The language subtag "${lang}" determines the translation language.
+- If the source and target language are the same (e.g. en-US → en-GB), adapt spelling, vocabulary, and conventions for the target region, or return the string unchanged if no adaptation is needed.
+- Preserve ALL HTML tags and attributes exactly as-is (only translate text content)
+- Return ONLY a JSON object mapping each English string to its translation
 - Use the exact English strings as keys (including any HTML)`
 
   if (keep?.length) {
     rules += `\n- NEVER translate these words, keep them exactly as-is: ${keep.join(', ')}`
   }
 
-  if (style) {
-    rules += `\n- Brand voice: ${style}`
+  // Build page context for the AI
+  let context = ''
+  if (pageContexts?.length > 0) {
+    const pages = pageContexts
+      .map((p) => `<!-- Page: ${p.url} -->\n${p.html}`)
+      .join('\n\n')
+    context = `\nHere is the full HTML of the pages where these strings appear. Use this to understand the context, tone, and placement of each string:\n\n${pages}\n`
   }
 
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 4096,
-    messages: [
-      {
-        role: 'user',
-        content: `Translate the following UI text from English to ${localeName}.
+  let systemPrompt = 'You are a professional website translator.'
+  if (style) {
+    systemPrompt = style
+  }
 
+  let response
+  try {
+    response = await client.messages.create({
+      model,
+      max_tokens: 4096,
+      system: systemPrompt,
+      messages: [
+        {
+          role: 'user',
+          content: `Translate the following UI text from English to ${locale}.
+${context}
 Rules:
 ${rules}
 
@@ -257,13 +283,16 @@ Strings to translate:
 ${numbered}
 
 Respond with only the JSON object, no markdown code fences.`,
-      },
-    ],
-  })
+        },
+      ],
+    })
+  } catch (err) {
+    console.error(`    API error: ${err.message}`)
+    return null
+  }
 
   try {
     let text = response.content[0].text.trim()
-    // Strip markdown code fences if present
     text = text.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
     return JSON.parse(text)
   } catch (err) {
@@ -297,10 +326,10 @@ async function main() {
   console.log(`Target locales: ${TARGET_LOCALES.join(', ')}`)
   console.log()
 
-  // Discover strings
+  // Discover strings and capture page HTML for context
   console.log('Discovering translatable strings...')
-  const strings = await discoverStrings()
-  console.log(`Found ${strings.size} translatable strings\n`)
+  const { strings, pageContexts } = await discoverStrings()
+  console.log(`Found ${strings.size} translatable strings across ${pageContexts.length} pages\n`)
 
   if (strings.size === 0) {
     console.log('No strings with translate attribute found. Add translate to elements:')
@@ -308,11 +337,11 @@ async function main() {
     return
   }
 
-  // Translate each locale
+  // Translate each locale with full page context
   const allTranslations = {}
   for (const locale of TARGET_LOCALES) {
     const existing = loadTranslationFile(locale)
-    const updated = await translateLocale(locale, strings, existing)
+    const updated = await translateLocale(locale, strings, existing, pageContexts)
     saveTranslationFile(locale, updated)
     allTranslations[locale] = updated
   }
