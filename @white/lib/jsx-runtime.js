@@ -1,3 +1,5 @@
+import { t as _t } from '../translate.js'
+
 const VOID = new Set([
   'area',
   'base',
@@ -127,15 +129,7 @@ export function h(tag, props, ...children) {
     .join('')
 
   if (shouldTranslate) {
-    const ctx = globalThis.__whiteTranslation
-    if (ctx && ctx.locale !== ctx.sourceLocale) {
-      const entry = ctx.translations[content]
-      if (entry?.value) {
-        content = entry.value
-      } else {
-        ctx._untranslated.add(content)
-      }
-    }
+    content = _t(content)
   }
 
   return `<${tag}${attrs}>${content}</${tag}>`

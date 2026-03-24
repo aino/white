@@ -85,6 +85,24 @@ export default function virtualHtmlPlugin() {
       })
     },
     configureServer(server) {
+      // Serve translation files for client-side t()
+      server.middlewares.use((req, res, next) => {
+        const match = req.url?.match(/^\/assets\/translations\/(\w+)\.json$/)
+        if (match) {
+          const filePath = resolve(__dirname, `../../.white/translations/${match[1]}.json`)
+          try {
+            const data = fs.readFileSync(filePath, 'utf8')
+            res.setHeader('Content-Type', 'application/json')
+            res.end(data)
+            return
+          } catch {
+            res.statusCode = 404
+            res.end('{}')
+            return
+          }
+        }
+        next()
+      })
       server.middlewares.use(async (req, res, next) => {
         try {
           // Apply Vercel middleware to all routes (including pages like /about)

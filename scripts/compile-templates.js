@@ -78,7 +78,7 @@ await build({
   jsx: 'transform',
   jsxFactory: 'h',
   jsxFragment: 'Fragment',
-  inject: [resolve(ROOT, '@white/lib/jsx-runtime.js')],
+  inject: [resolve(ROOT, '@white/lib/jsx-runtime.js'), resolve(ROOT, '@white/translate.js')],
   plugins: [aliasPlugin, ignoreCssPlugin],
   platform: 'node',
   target: 'node18',
@@ -134,16 +134,22 @@ try {
   console.warn('Could not build asset manifest:', e.message)
 }
 
-// Bundle translations for ISR/API runtime
+// Bundle translations for ISR/API runtime + client-side
 const TRANSLATIONS_DIR = resolve(ROOT, '.white/translations')
 try {
   const localeFiles = readdirSync(TRANSLATIONS_DIR).filter((f) => f.endsWith('.json'))
   if (localeFiles.length > 0) {
     const combined = {}
+    // Per-locale client files (served as static assets)
+    const clientDir = resolve(ROOT, 'dist/assets/translations')
+    mkdirSync(clientDir, { recursive: true })
     for (const f of localeFiles) {
       const locale = f.replace('.json', '')
-      combined[locale] = JSON.parse(readFileSync(resolve(TRANSLATIONS_DIR, f), 'utf8'))
+      const data = JSON.parse(readFileSync(resolve(TRANSLATIONS_DIR, f), 'utf8'))
+      combined[locale] = data
+      writeFileSync(resolve(clientDir, `${locale}.json`), JSON.stringify(data))
     }
+    // Combined file for ISR/API (server-side)
     writeFileSync(resolve(OUT_DIR, 'translations.json'), JSON.stringify(combined))
     console.log(`\nTranslations bundled (${localeFiles.map((f) => f.replace('.json', '')).join(', ')})`)
   }

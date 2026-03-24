@@ -29,7 +29,7 @@ export default function jsxToHtmlPlugin() {
           jsx: 'transform',
           jsxFactory: 'h',
           jsxFragment: 'Fragment',
-          jsxInject: `import { h, Fragment } from 'lib/jsx-runtime'`,
+          jsxInject: `import { h, Fragment } from 'lib/jsx-runtime'\nimport { t } from '@white/translate'`,
         },
       })
 

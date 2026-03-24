@@ -10,6 +10,21 @@ import 'white/css'
 import { removeTrailingSlash } from './utils/string'
 import createContext from './utils/context'
 
+// Load translations for current locale (client-side)
+const translationsReady = (async () => {
+  const locale = document.documentElement.lang
+  const sourceLocale = LOCALES[0]
+  if (locale && locale !== sourceLocale) {
+    try {
+      const res = await fetch(`/assets/translations/${locale}.json`)
+      if (res.ok) {
+        const translations = await res.json()
+        globalThis.__whiteTranslation = { locale, sourceLocale, translations, _untranslated: new Set() }
+      }
+    } catch {}
+  }
+})()
+
 export const cachedPages = new Map()
 
 export const config = {
@@ -296,7 +311,8 @@ if (config.fakeSPA) {
   })
 }
 
-const white = () => {
+const white = async () => {
+  await translationsReady
   cachedPages.set(location.pathname, document.documentElement.outerHTML)
   const app = id('app')
 

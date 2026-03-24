@@ -21,7 +21,7 @@ export default function customJsxTransform() {
           return result
         } else {
           // For other JSX files, use custom h function
-          const codeWithImport = `import { h, Fragment } from 'lib/jsx-runtime'\n${code}`
+          const codeWithImport = `import { h, Fragment } from 'lib/jsx-runtime'\nimport { t } from '@white/translate'\n${code}`
           const result = await transformWithEsbuild(codeWithImport, id, {
             jsx: 'transform',
             jsxFactory: 'h',

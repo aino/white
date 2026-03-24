@@ -59,7 +59,25 @@ function findTemplatePath(routeKey) {
   return existsSync(full) ? full : null
 }
 
-// Phase 1: Discover all translatable strings by rendering every page
+// Scan source files for t('...') calls
+async function discoverTCalls() {
+  const { globSync } = await import('glob')
+  const files = globSync(['src/**/*.{jsx,js}', '@white/**/*.js'], { cwd: ROOT, ignore: ['node_modules/**'] })
+  const strings = new Set()
+  const re = /\bt\(\s*(['"`])((?:(?!\1).)*)\1\s*\)/g
+  for (const file of files) {
+    try {
+      const code = readFileSync(resolve(ROOT, file), 'utf8')
+      let match
+      while ((match = re.exec(code)) !== null) {
+        strings.add(match[2])
+      }
+    } catch {}
+  }
+  return strings
+}
+
+// Phase 1: Discover all translatable strings by rendering every page + scanning t() calls
 async function discoverStrings() {
   const vite = await createServer({
     server: { middlewareMode: true },
@@ -70,7 +88,7 @@ async function discoverStrings() {
       jsx: 'transform',
       jsxFactory: 'h',
       jsxFragment: 'Fragment',
-      jsxInject: `import { h, Fragment } from 'lib/jsx-runtime'`,
+      jsxInject: `import { h, Fragment } from 'lib/jsx-runtime'\nimport { t } from '@white/translate'`,
     },
   })
 
@@ -119,6 +137,11 @@ async function discoverStrings() {
   }
 
   await vite.close()
+
+  // Also scan for t('...') calls in source files
+  const tCallStrings = await discoverTCalls()
+  for (const s of tCallStrings) allStrings.add(s)
+
   return allStrings
 }
 
