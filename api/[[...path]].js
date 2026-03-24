@@ -3,6 +3,7 @@ import { globalData, routes } from '../src/data.config.js'
 import { LOCALES } from '../src/config.js'
 
 let templates = null
+let assets = null
 
 async function loadTemplates() {
   if (templates) return templates
@@ -10,11 +11,22 @@ async function loadTemplates() {
   return templates
 }
 
-export const GET = async (req) => {
-  const url = new URL(req.url)
-  const path = url.pathname.replace(/^\/api/, '').replace(/\/$/, '') || '/'
+async function loadAssets() {
+  if (assets) return assets
+  assets = (await import('../dist/templates/assets.json', { with: { type: 'json' } })).default
+  return assets
+}
 
+function injectAssets(html, assets) {
+  return html.replace(
+    /<script type="module">import ['"]@white\/white\.js['"]<\/script>/,
+    `${assets.css}\n${assets.js}`
+  )
+}
+
+async function render(path) {
   const registry = await loadTemplates()
+  const assetManifest = await loadAssets()
 
   const context = await getPageContext(path, {
     routes,
@@ -31,7 +43,7 @@ export const GET = async (req) => {
         locales: LOCALES,
       })
       return new Response(
-        '<!DOCTYPE html>' + NotFound(ctx404?.data || { locale: LOCALES[0] }),
+        injectAssets('<!DOCTYPE html>' + NotFound(ctx404?.data || { locale: LOCALES[0] }), assetManifest),
         {
           status: 404,
           headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' },
@@ -46,12 +58,19 @@ export const GET = async (req) => {
     return new Response('Template not found', { status: 500 })
   }
 
-  const html = '<!DOCTYPE html>' + Template(context.data)
+  return new Response(
+    injectAssets('<!DOCTYPE html>' + Template(context.data), assetManifest),
+    {
+      headers: {
+        'Content-Type': 'text/html',
+        'Cache-Control': 'no-store',
+      },
+    }
+  )
+}
 
-  return new Response(html, {
-    headers: {
-      'Content-Type': 'text/html',
-      'Cache-Control': 'no-store',
-    },
-  })
+export const GET = async (req) => {
+  const url = new URL(req.url)
+  const path = url.pathname.replace(/^\/api/, '').replace(/\/$/, '') || '/'
+  return render(path)
 }

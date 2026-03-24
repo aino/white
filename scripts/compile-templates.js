@@ -1,6 +1,6 @@
 import { build } from 'esbuild'
 import { resolve } from 'path'
-import { writeFileSync, mkdirSync, readdirSync, statSync } from 'fs'
+import { writeFileSync, readFileSync, mkdirSync, readdirSync, statSync } from 'fs'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const PAGES_DIR = resolve(ROOT, 'src/pages')
@@ -111,6 +111,19 @@ ${Object.entries(registry)
 
 mkdirSync(OUT_DIR, { recursive: true })
 writeFileSync(resolve(OUT_DIR, 'registry.js'), registryCode)
+
+// Extract asset tags from Vite's built HTML for injection at render time
+const DIST_DIR = resolve(ROOT, 'dist')
+try {
+  const builtHtml = readFileSync(resolve(DIST_DIR, 'index.html'), 'utf-8')
+  const cssLinks = builtHtml.match(/<link[^>]*href="\/assets\/[^"]*\.css"[^>]*>/g) || []
+  const moduleScripts = builtHtml.match(/<script type="module">[^<]*<\/script>/g) || []
+  const assets = { css: cssLinks.join('\n'), js: moduleScripts.join('\n') }
+  writeFileSync(resolve(OUT_DIR, 'assets.json'), JSON.stringify(assets, null, 2))
+  console.log(`\nAsset manifest written (${cssLinks.length} CSS, ${moduleScripts.length} JS)`)
+} catch (e) {
+  console.warn('Could not extract asset manifest from dist/index.html:', e.message)
+}
 
 console.log('Templates compiled:')
 for (const [route, path] of Object.entries(registry)) {
