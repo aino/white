@@ -1,90 +1,114 @@
 {
   "_global": [
     {
-      "id": "9ebbcd7a",
       "source": "White Framework",
+      "id": "9ebbcd7a",
       "value": "White Framework",
       "status": "auto",
       "sourceHash": "5a278a25"
     },
     {
-      "id": "72907c37",
       "source": "A static site generator with persistent component architecture. Navigate between pages and watch the counter keep its state.",
+      "id": "72907c37",
       "value": "Ein statischer Website-Generator mit persistenter Komponentenarchitektur. Navigiere zwischen Seiten und beobachte, wie der Counter seinen Zustand behält.",
       "status": "auto",
       "sourceHash": "dbe5a916"
     },
     {
-      "id": "47074d6f",
       "source": "Pages",
+      "id": "47074d6f",
       "value": "Seiten",
       "status": "auto",
       "sourceHash": "600584c2"
     },
     {
-      "id": "10cbfa00",
       "source": "About (static page)",
+      "id": "10cbfa00",
       "value": "Über uns (statische Seite)",
       "status": "auto",
       "sourceHash": "74a7510c"
     },
     {
-      "id": "0c7d0484",
       "source": "Hello World (dynamic slug)",
+      "id": "0c7d0484",
       "value": "Hello World (dynamischer Slug)",
       "status": "auto",
       "sourceHash": "883b7963"
     },
     {
-      "id": "7c9012a2",
       "source": "Getting Started (dynamic slug)",
+      "id": "7c9012a2",
       "value": "Erste Schritte (dynamischer Slug)",
       "status": "auto",
       "sourceHash": "2c22cb58"
     },
     {
-      "id": "f2f13314",
       "source": "About",
+      "id": "f2f13314",
       "value": "Über uns",
       "status": "auto",
       "sourceHash": "6b21fb79"
     },
     {
-      "id": "ef5407be",
       "source": "Items added",
+      "id": "ef5407be",
       "value": "Elemente hinzugefügt",
       "status": "auto",
       "sourceHash": "4ab3cdab"
+    },
+    {
+      "source": "Hello World",
+      "value": "Hallo Welt",
+      "status": "auto",
+      "sourceHash": "0a4d55a8"
+    },
+    {
+      "source": "Getting Started",
+      "value": "Erste Schritte",
+      "status": "auto",
+      "sourceHash": "010b85ad"
     }
   ],
   "CounterContent": [
     {
-      "id": "c0c764c4",
       "source": "Add",
+      "id": "c0c764c4",
       "value": "Hinzufügen",
       "status": "auto",
       "sourceHash": "61cc55aa"
     },
     {
-      "id": "007637f4",
       "source": "Counter is empty",
+      "id": "007637f4",
       "value": "Counter ist leer",
       "status": "auto",
       "sourceHash": "938ee536"
     },
     {
-      "id": "c7e2ef96",
       "source": "Current path: <span class=\"pathname\">/</span>",
+      "id": "c7e2ef96",
       "value": "Aktueller Pfad: <span class=\"pathname\">/</span>",
       "status": "auto",
       "sourceHash": "4c5b01ea"
     },
     {
-      "id": "758bf9e8",
       "source": "Current path: <span class=\"pathname\">/about</span>",
+      "id": "758bf9e8",
       "value": "Aktueller Pfad: <span class=\"pathname\">/about</span>",
       "status": "auto",
       "sourceHash": "6e7dab51"
+    },
+    {
+      "source": "Current path: <span class=\"pathname\">/about/hello-world</span>",
+      "value": "Aktueller Pfad: <span class=\"pathname\">/about/hello-world</span>",
+      "status": "auto",
+      "sourceHash": "2070cb6b"
+    },
+    {
+      "source": "Current path: <span class=\"pathname\">/about/getting-started</span>",
+      "value": "Aktueller Pfad: <span class=\"pathname\">/about/getting-started</span>",
+      "status": "auto",
+      "sourceHash": "e3ed7223"
     }
   ]
 }
