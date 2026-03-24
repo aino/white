@@ -116,6 +116,14 @@ export function h(tag, props, ...children) {
       value = styleObjectToString(v)
     }
 
+    // Localize internal hrefs
+    if (k === 'href' && typeof v === 'string' && v.startsWith('/')) {
+      const ctx = globalThis.__whiteTranslation
+      if (ctx && ctx.locale !== ctx.sourceLocale) {
+        value = `/${ctx.locale}${v}`
+      }
+    }
+
     attrs += v === true ? ` ${key}` : ` ${key}="${value}"`
   }
 
