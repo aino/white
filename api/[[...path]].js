@@ -1,12 +1,9 @@
 import { getPageContext } from '../lambda/getPageContext.js'
 import { globalData, routes } from '../src/data.config.js'
 import { LOCALES } from '../src/config.js'
-import { setTranslationContext, clearTranslationContext } from '../@white/ai/translate.js'
 
-const SOURCE_LOCALE = LOCALES[0]
 let templates = null
 let assets = null
-let translations = null
 
 async function loadTemplates() {
   if (templates) return templates
@@ -20,16 +17,6 @@ async function loadAssets() {
   return assets
 }
 
-async function loadTranslations() {
-  if (translations) return translations
-  try {
-    translations = (await import('../dist/templates/translations.json', { with: { type: 'json' } })).default
-  } catch {
-    translations = {}
-  }
-  return translations
-}
-
 function injectAssets(html, assets) {
   return html.replace(
     /<script type="module">import ['"]@white\/white\.js['"]<\/script>/,
@@ -37,18 +24,9 @@ function injectAssets(html, assets) {
   )
 }
 
-function renderWithTranslation(Template, data, trans) {
-  const locale = data.locale || SOURCE_LOCALE
-  setTranslationContext(locale, SOURCE_LOCALE, trans[locale] || {})
-  const html = '<!DOCTYPE html>' + Template(data)
-  clearTranslationContext()
-  return html
-}
-
 async function render(path, { draft = false } = {}) {
   const registry = await loadTemplates()
   const assetManifest = await loadAssets()
-  const trans = await loadTranslations()
 
   const context = await getPageContext(path, {
     routes,
@@ -66,7 +44,7 @@ async function render(path, { draft = false } = {}) {
         locales: LOCALES,
       })
       return new Response(
-        injectAssets(renderWithTranslation(NotFound, ctx404?.data || { locale: LOCALES[0] }, trans), assetManifest),
+        injectAssets('<!DOCTYPE html>' + NotFound(ctx404?.data || { locale: LOCALES[0] }), assetManifest),
         {
           status: 404,
           headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' },
@@ -82,7 +60,7 @@ async function render(path, { draft = false } = {}) {
   }
 
   return new Response(
-    injectAssets(renderWithTranslation(Template, context.data, trans), assetManifest),
+    injectAssets('<!DOCTYPE html>' + Template(context.data), assetManifest),
     {
       headers: {
         'Content-Type': 'text/html',

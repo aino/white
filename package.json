@@ -13,7 +13,7 @@
     "build:assets": "WHITE_ASSETS_ONLY=1 vite build",
     "build:templates": "node scripts/compile-templates.js",
     "build:lambda": "node scripts/bundle-lambda.js",
-    "build:isr": "npm run translate && npm run build:assets && npm run build:templates",
+    "build:isr": "npm run build:assets && npm run build:templates",
     "vercel-build": "npm run build:isr",
     "start": "node @white/lib/previewServer.js",
     "translate": "node scripts/translate.js",

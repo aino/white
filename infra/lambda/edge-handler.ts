@@ -1,4 +1,4 @@
-import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3'
+import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 
 const s3 = new S3Client({ region: 'us-east-1' })
 // Lambda@Edge doesn't support env vars — bucket name injected at bundle time

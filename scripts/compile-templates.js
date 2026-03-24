@@ -134,41 +134,6 @@ try {
   console.warn('Could not build asset manifest:', e.message)
 }
 
-// Bundle translations for ISR/API runtime + client-side
-const TRANSLATIONS_DIR = resolve(ROOT, '.white/translations')
-try {
-  const localeFiles = readdirSync(TRANSLATIONS_DIR).filter((f) => f.endsWith('.json'))
-  if (localeFiles.length > 0) {
-    const combined = {}
-    // Per-locale client files (served as static assets)
-    const clientDir = resolve(ROOT, 'dist/assets/translations')
-    mkdirSync(clientDir, { recursive: true })
-    for (const f of localeFiles) {
-      const locale = f.replace('.json', '')
-      const data = JSON.parse(readFileSync(resolve(TRANSLATIONS_DIR, f), 'utf8'))
-      // Index component-grouped format: { Component: { source: entry } }
-      const indexed = {}
-      for (const [component, entries] of Object.entries(data)) {
-        indexed[component] = {}
-        if (Array.isArray(entries)) {
-          for (const entry of entries) {
-            if (entry.source) indexed[component][entry.source] = entry
-          }
-        }
-      }
-      combined[locale] = indexed
-      // Client files as-is (component-grouped, indexed on load by white.js)
-      writeFileSync(resolve(clientDir, `${locale}.json`), JSON.stringify(data))
-    }
-    // Combined file for ISR/API (server-side, pre-indexed)
-    writeFileSync(resolve(OUT_DIR, 'translations.json'), JSON.stringify(combined))
-    console.log(`\nTranslations bundled (${localeFiles.map((f) => f.replace('.json', '')).join(', ')})`)
-  }
-} catch {
-  // No translations yet — write empty object so imports don't fail
-  writeFileSync(resolve(OUT_DIR, 'translations.json'), '{}')
-}
-
 console.log('Templates compiled:')
 for (const [route, path] of Object.entries(registry)) {
   console.log(`  ${route} → ${path}`)

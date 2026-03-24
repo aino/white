@@ -1,8 +1,12 @@
 import { build } from 'esbuild'
 import { resolve } from 'path'
 import { cpSync, existsSync, readFileSync, writeFileSync } from 'fs'
+import { loadEnv } from 'vite'
 
 const ROOT = resolve(import.meta.dirname, '..')
+
+// Load .env for API key
+Object.assign(process.env, loadEnv('development', ROOT, ''))
 const OUT_DIR = resolve(ROOT, 'infra/lambda/bundle')
 const TEMPLATES_DIR = resolve(ROOT, 'dist/templates')
 
@@ -75,8 +79,13 @@ await build({
   ],
 })
 
-// Inject bucket name into the bundle
-const bundle = readFileSync(resolve(OUT_DIR, 'index.js'), 'utf-8')
-writeFileSync(resolve(OUT_DIR, 'index.js'), bundle.replace('__BUCKET_NAME__', bucketName))
+// Inject bucket name and API key into the bundle
+let bundle = readFileSync(resolve(OUT_DIR, 'index.js'), 'utf-8')
+bundle = bundle.replace(/__BUCKET_NAME__/g, bucketName)
 
-console.log(`Lambda bundle written to ${OUT_DIR}/index.js (bucket: ${bucketName})`)
+const apiKey = process.env.ANTHROPIC_API_KEY || ''
+bundle = bundle.replace(/__ANTHROPIC_API_KEY__/g, apiKey)
+
+writeFileSync(resolve(OUT_DIR, 'index.js'), bundle)
+
+console.log(`Lambda bundle written to ${OUT_DIR}/index.js (bucket: ${bucketName}, API key: ${apiKey ? 'set' : 'missing'})`)
