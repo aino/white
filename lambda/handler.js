@@ -1,6 +1,6 @@
 import { getPageContext } from './getPageContext.js'
 import templates from '../dist/templates/registry.js'
-import translations from '../dist/templates/translations.json' with { type: 'json' }
+import translations from '../dist/templates/translations.json'
 import { globalData, routes } from '../src/data.config.js'
 import { LOCALES } from '../src/config.js'
 import { setTranslationContext, clearTranslationContext } from '../@white/ai/translate.js'
