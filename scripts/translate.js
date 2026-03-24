@@ -22,7 +22,16 @@ function hash(text) {
 function loadTranslationFile(locale) {
   const filePath = resolve(TRANSLATIONS_DIR, `${locale}.json`)
   try {
-    return JSON.parse(readFileSync(filePath, 'utf8'))
+    const data = JSON.parse(readFileSync(filePath, 'utf8'))
+    // Support both array (new) and object (legacy) formats
+    if (Array.isArray(data)) {
+      const index = {}
+      for (const entry of data) {
+        if (entry.source) index[entry.source] = entry
+      }
+      return index
+    }
+    return data
   } catch {
     return {}
   }
@@ -31,7 +40,12 @@ function loadTranslationFile(locale) {
 function saveTranslationFile(locale, translations) {
   mkdirSync(TRANSLATIONS_DIR, { recursive: true })
   const filePath = resolve(TRANSLATIONS_DIR, `${locale}.json`)
-  writeFileSync(filePath, JSON.stringify(translations, null, 2) + '\n')
+  // Save as array format
+  const arr = Object.entries(translations).map(([source, entry]) => ({
+    source,
+    ...entry,
+  }))
+  writeFileSync(filePath, JSON.stringify(arr, null, 2) + '\n')
 }
 
 // Resolve all URLs from routes config (including dynamic slugs)

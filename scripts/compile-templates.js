@@ -146,10 +146,15 @@ try {
     for (const f of localeFiles) {
       const locale = f.replace('.json', '')
       const data = JSON.parse(readFileSync(resolve(TRANSLATIONS_DIR, f), 'utf8'))
-      combined[locale] = data
+      // Index array format into object for runtime lookup
+      const indexed = Array.isArray(data)
+        ? Object.fromEntries(data.filter((e) => e.source).map((e) => [e.source, e]))
+        : data
+      combined[locale] = indexed
+      // Client files stay as arrays (readable, indexed on load by white.js)
       writeFileSync(resolve(clientDir, `${locale}.json`), JSON.stringify(data))
     }
-    // Combined file for ISR/API (server-side)
+    // Combined file for ISR/API (server-side, pre-indexed)
     writeFileSync(resolve(OUT_DIR, 'translations.json'), JSON.stringify(combined))
     console.log(`\nTranslations bundled (${localeFiles.map((f) => f.replace('.json', '')).join(', ')})`)
   }

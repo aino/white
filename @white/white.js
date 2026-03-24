@@ -18,7 +18,11 @@ const translationsReady = (async () => {
     try {
       const res = await fetch(`/assets/translations/${locale}.json`)
       if (res.ok) {
-        const translations = await res.json()
+        const data = await res.json()
+        // Index array format into lookup object
+        const translations = Array.isArray(data)
+          ? Object.fromEntries(data.filter((e) => e.source).map((e) => [e.source, e]))
+          : data
         globalThis.__whiteTranslation = { locale, sourceLocale, translations, _untranslated: new Set() }
       }
     } catch {}

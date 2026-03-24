@@ -12,7 +12,15 @@ function loadTranslations(locale, sourceLocale) {
   if (locale === sourceLocale) return {}
   try {
     const filePath = resolve(process.cwd(), `.white/translations/${locale}.json`)
-    return JSON.parse(readFileSync(filePath, 'utf8'))
+    const data = JSON.parse(readFileSync(filePath, 'utf8'))
+    if (Array.isArray(data)) {
+      const index = {}
+      for (const entry of data) {
+        if (entry.source) index[entry.source] = entry
+      }
+      return index
+    }
+    return data
   } catch {
     return {}
   }
@@ -21,7 +29,9 @@ function loadTranslations(locale, sourceLocale) {
 function saveTranslations(locale, translations) {
   const dir = resolve(process.cwd(), '.white/translations')
   mkdirSync(dir, { recursive: true })
-  writeFileSync(resolve(dir, `${locale}.json`), JSON.stringify(translations, null, 2) + '\n')
+  // Save as array format
+  const arr = Object.entries(translations).map(([source, entry]) => ({ source, ...entry }))
+  writeFileSync(resolve(dir, `${locale}.json`), JSON.stringify(arr, null, 2) + '\n')
 }
 
 function hash(text) {
