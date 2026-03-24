@@ -1,3 +1,6 @@
+// Disable AWS CLI pager so output doesn't hang
+process.env.AWS_PAGER = ''
+
 import { execSync } from 'child_process'
 import { readFileSync, existsSync } from 'fs'
 import { resolve } from 'path'
