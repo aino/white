@@ -12,8 +12,10 @@ import createContext from './utils/context'
 
 // Load translations for current locale (client-side)
 const translationsReady = (async () => {
-  const locale = document.documentElement.lang
+  const lang = document.documentElement.lang
   const sourceLocale = LOCALES[0]
+  // Match full locale from LOCALES (e.g. lang="de" → "de-DE" from config)
+  const locale = LOCALES.find((l) => l === lang || l.startsWith(lang + '-')) || lang
   if (locale && locale !== sourceLocale) {
     try {
       const res = await fetch(`/assets/translations/${locale}.json`)
