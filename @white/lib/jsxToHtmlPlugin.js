@@ -11,6 +11,9 @@ export default function jsxToHtmlPlugin() {
     // Remove load hook to let Vite handle JSX normally
 
     async generateBundle(options, bundle) {
+      // Skip HTML generation when building assets only (ISR mode)
+      if (process.env.WHITE_ASSETS_ONLY) return
+
       // Get dynamic paths for processing
       const { dynamicPaths } = await getDynamicRoutes()
 

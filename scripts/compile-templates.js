@@ -112,17 +112,26 @@ ${Object.entries(registry)
 mkdirSync(OUT_DIR, { recursive: true })
 writeFileSync(resolve(OUT_DIR, 'registry.js'), registryCode)
 
-// Extract asset tags from Vite's built HTML for injection at render time
-const DIST_DIR = resolve(ROOT, 'dist')
+// Build asset manifest for injection at render time
+const ASSETS_DIR = resolve(ROOT, 'dist/assets')
 try {
-  const builtHtml = readFileSync(resolve(DIST_DIR, 'index.html'), 'utf-8')
-  const cssLinks = builtHtml.match(/<link[^>]*href="\/assets\/[^"]*\.css"[^>]*>/g) || []
-  const moduleScripts = builtHtml.match(/<script type="module">[^<]*<\/script>/g) || []
-  const assets = { css: cssLinks.join('\n'), js: moduleScripts.join('\n') }
+  const files = readdirSync(ASSETS_DIR)
+  const cssFiles = files.filter((f) => f.endsWith('.css'))
+  const jsFiles = files.filter((f) => f.endsWith('.js') && statSync(resolve(ASSETS_DIR, f)).size > 100)
+
+  // Find the main JS bundle (largest file, contains white.js)
+  const mainJs = jsFiles.sort(
+    (a, b) => statSync(resolve(ASSETS_DIR, b)).size - statSync(resolve(ASSETS_DIR, a)).size
+  )[0]
+
+  const assets = {
+    css: cssFiles.map((f) => `<link rel="stylesheet" href="/assets/${f}">`).join('\n'),
+    js: mainJs ? `<script type="module">import "/assets/${mainJs}"</script>` : '',
+  }
   writeFileSync(resolve(OUT_DIR, 'assets.json'), JSON.stringify(assets, null, 2))
-  console.log(`\nAsset manifest written (${cssLinks.length} CSS, ${moduleScripts.length} JS)`)
+  console.log(`\nAsset manifest written (${cssFiles.length} CSS, main JS: ${mainJs || 'none'})`)
 } catch (e) {
-  console.warn('Could not extract asset manifest from dist/index.html:', e.message)
+  console.warn('Could not build asset manifest:', e.message)
 }
 
 console.log('Templates compiled:')
