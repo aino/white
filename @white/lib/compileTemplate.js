@@ -13,14 +13,17 @@ function loadTranslations(locale, sourceLocale) {
   try {
     const filePath = resolve(process.cwd(), `.white/translations/${locale}.json`)
     const data = JSON.parse(readFileSync(filePath, 'utf8'))
-    if (Array.isArray(data)) {
-      const index = {}
-      for (const entry of data) {
-        if (entry.source) index[entry.source] = entry
+    // Index component-grouped format: { Component: { source: entry } }
+    const indexed = {}
+    for (const [component, entries] of Object.entries(data)) {
+      indexed[component] = {}
+      if (Array.isArray(entries)) {
+        for (const entry of entries) {
+          if (entry.source) indexed[component][entry.source] = entry
+        }
       }
-      return index
     }
-    return data
+    return indexed
   } catch {
     return {}
   }
@@ -29,9 +32,7 @@ function loadTranslations(locale, sourceLocale) {
 function saveTranslations(locale, translations) {
   const dir = resolve(process.cwd(), '.white/translations')
   mkdirSync(dir, { recursive: true })
-  // Save as array format
-  const arr = Object.entries(translations).map(([source, entry]) => ({ source, ...entry }))
-  writeFileSync(resolve(dir, `${locale}.json`), JSON.stringify(arr, null, 2) + '\n')
+  writeFileSync(resolve(dir, `${locale}.json`), JSON.stringify(translations, null, 2) + '\n')
 }
 
 function hash(text) {
@@ -39,9 +40,10 @@ function hash(text) {
 }
 
 // Auto-translate missing strings via AI (dev mode)
+// untranslated is now an array of { source, component, tag, key }
 async function autoTranslate(locale, untranslated, translations) {
   const apiKey = process.env.ANTHROPIC_API_KEY
-  if (!apiKey || untranslated.size === 0) return null
+  if (!apiKey || untranslated.length === 0) return null
 
   let TRANSLATE
   try {
@@ -51,12 +53,11 @@ async function autoTranslate(locale, untranslated, translations) {
   const { default: Anthropic } = await import('@anthropic-ai/sdk')
   const client = new Anthropic({ apiKey })
 
-  const localeName = locale
-  const strings = [...untranslated]
-  const numbered = strings.map((s, i) => `${i + 1}. ${JSON.stringify(s)}`).join('\n')
+  const sources = [...new Set(untranslated.map((e) => e.source))]
+  const numbered = sources.map((s, i) => `${i + 1}. ${JSON.stringify(s)}`).join('\n')
 
   let rules = `- Preserve ALL HTML tags exactly as-is (only translate text content between tags)
-- Return ONLY a JSON object mapping each English string to its ${localeName} translation
+- Return ONLY a JSON object mapping each English string to its ${locale} translation
 - Use the exact English strings as keys (including any HTML)`
 
   if (TRANSLATE?.keep?.length) {
@@ -66,28 +67,36 @@ async function autoTranslate(locale, untranslated, translations) {
     rules += `\n- Brand voice: ${TRANSLATE.style}`
   }
 
-  const response = await client.messages.create({
-    model: 'claude-haiku-4-5-20251001',
-    max_tokens: 4096,
-    messages: [{
-      role: 'user',
-      content: `Translate the following UI text from English to ${localeName}.\n\nRules:\n${rules}\n\nStrings to translate:\n${numbered}\n\nRespond with only the JSON object, no markdown code fences.`,
-    }],
-  })
+  const model = TRANSLATE?.model || 'claude-haiku-4-5-20251001'
+  let response
+  try {
+    response = await client.messages.create({
+      model,
+      max_tokens: 4096,
+      messages: [{
+        role: 'user',
+        content: `Translate the following UI text from English to ${locale}.\n\nRules:\n${rules}\n\nStrings to translate:\n${numbered}\n\nRespond with only the JSON object, no markdown code fences.`,
+      }],
+    })
+  } catch (err) {
+    console.warn(`  Auto-translate API error: ${err.message}`)
+    return null
+  }
 
   let text = response.content[0].text.trim()
   text = text.replace(/^```(?:json)?\s*\n?/, '').replace(/\n?```\s*$/, '')
   const result = JSON.parse(text)
 
-  // Merge into translations and save
-  const updated = { ...translations }
-  for (const source of strings) {
-    if (result[source]) {
-      updated[source] = { value: result[source], status: 'auto', sourceHash: hash(source) }
-    }
+  // Merge into component-grouped translations
+  const updated = JSON.parse(JSON.stringify(translations))
+  for (const entry of untranslated) {
+    const { source, component } = entry
+    if (!result[source]) continue
+    if (!updated[component]) updated[component] = {}
+    updated[component][source] = { value: result[source], status: 'auto', sourceHash: hash(source) }
   }
   saveTranslations(locale, updated)
-  console.log(`  Auto-translated ${strings.length} strings → ${locale}`)
+  console.log(`  Auto-translated ${sources.length} strings → ${locale}`)
   return updated
 }
 
@@ -111,7 +120,7 @@ export default async function compileTemplate(templatePath, data, viteServer, { 
     const untranslated = clearTranslationContext()
 
     // In dev mode, auto-translate missing strings and re-render
-    if (dev && untranslated.size > 0 && locale !== sourceLocale) {
+    if (dev && untranslated.length > 0 && locale !== sourceLocale) {
       try {
         const updated = await autoTranslate(locale, untranslated, translations)
         if (updated) {

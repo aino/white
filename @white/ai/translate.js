@@ -5,27 +5,25 @@ export function setTranslationContext(locale, sourceLocale, translations) {
     locale,
     sourceLocale,
     translations: translations || {},
-    _untranslated: new Set(),
+    _untranslated: [],
+    _componentStack: [],
+    _currentComponent: null,
   }
 }
 
 export function clearTranslationContext() {
   const ctx = globalThis.__whiteTranslation
   globalThis.__whiteTranslation = null
-  return ctx?._untranslated || new Set()
-}
-
-export function translate(sourceText) {
-  const ctx = globalThis.__whiteTranslation
-  if (!ctx || ctx.locale === ctx.sourceLocale) return sourceText
-
-  const entry = ctx.translations[sourceText]
-  if (entry?.value) return entry.value
-
-  ctx._untranslated.add(sourceText)
-  return sourceText
+  return ctx?._untranslated || []
 }
 
 export function sourceHash(text) {
   return createHash('sha1').update(text).digest('hex').slice(0, 8)
+}
+
+export function translationId(component, tag, source, key) {
+  const input = key
+    ? `${component}::${key}`
+    : `${component}::${tag}::${source}`
+  return createHash('sha1').update(input).digest('hex').slice(0, 8)
 }

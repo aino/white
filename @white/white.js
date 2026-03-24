@@ -11,6 +11,19 @@ import { removeTrailingSlash } from './utils/string'
 import createContext from './utils/context'
 
 // Load translations for current locale (client-side)
+function indexTranslations(data) {
+  const indexed = {}
+  for (const [component, entries] of Object.entries(data)) {
+    indexed[component] = {}
+    if (Array.isArray(entries)) {
+      for (const entry of entries) {
+        if (entry.source) indexed[component][entry.source] = entry
+      }
+    }
+  }
+  return indexed
+}
+
 const translationsReady = (async () => {
   const locale = document.documentElement.dataset.locale
   const sourceLocale = LOCALES[0]
@@ -19,11 +32,11 @@ const translationsReady = (async () => {
       const res = await fetch(`/assets/translations/${locale}.json`)
       if (res.ok) {
         const data = await res.json()
-        // Index array format into lookup object
-        const translations = Array.isArray(data)
-          ? Object.fromEntries(data.filter((e) => e.source).map((e) => [e.source, e]))
-          : data
-        globalThis.__whiteTranslation = { locale, sourceLocale, translations, _untranslated: new Set() }
+        const translations = indexTranslations(data)
+        globalThis.__whiteTranslation = {
+          locale, sourceLocale, translations,
+          _untranslated: [], _componentStack: [], _currentComponent: null,
+        }
       }
     } catch {}
   }
@@ -101,6 +114,9 @@ const mountComponents = async (container) => {
     const componentScript = components[componentName]
 
     if (componentScript && !mountedComponents.has(node)) {
+      // Set translation component context for t() calls
+      const tCtx = globalThis.__whiteTranslation
+      if (tCtx) tCtx._currentComponent = componentName
       const { ctx, cleanup } = createContext(node)
       try {
         const result = await componentScript(node, ctx)

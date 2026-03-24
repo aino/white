@@ -6,7 +6,7 @@ import { createHash } from 'crypto'
 // Load .env files into process.env
 const env = loadEnv('development', process.cwd(), '')
 Object.assign(process.env, env)
-import { setTranslationContext, clearTranslationContext } from '../@white/ai/translate.js'
+import { setTranslationContext, clearTranslationContext, translationId } from '../@white/ai/translate.js'
 import { LOCALES, TRANSLATE } from '../src/config.js'
 import { globalData, routes } from '../src/data.config.js'
 
@@ -19,40 +19,41 @@ function hash(text) {
   return createHash('sha1').update(text).digest('hex').slice(0, 8)
 }
 
+// Load component-grouped translation file
+// Format: { "Component": [ { id, source, value, status }, ... ] }
 function loadTranslationFile(locale) {
   const filePath = resolve(TRANSLATIONS_DIR, `${locale}.json`)
   try {
-    const data = JSON.parse(readFileSync(filePath, 'utf8'))
-    // Support both array (new) and object (legacy) formats
-    if (Array.isArray(data)) {
-      const index = {}
-      for (const entry of data) {
-        if (entry.source) index[entry.source] = entry
-      }
-      return index
-    }
-    return data
+    return JSON.parse(readFileSync(filePath, 'utf8'))
   } catch {
     return {}
   }
 }
 
-function saveTranslationFile(locale, translations) {
+function saveTranslationFile(locale, data) {
   mkdirSync(TRANSLATIONS_DIR, { recursive: true })
   const filePath = resolve(TRANSLATIONS_DIR, `${locale}.json`)
-  // Save as array format
-  const arr = Object.entries(translations).map(([source, entry]) => ({
-    source,
-    ...entry,
-  }))
-  writeFileSync(filePath, JSON.stringify(arr, null, 2) + '\n')
+  writeFileSync(filePath, JSON.stringify(data, null, 2) + '\n')
+}
+
+// Build a lookup index: { component: { source: entry } }
+function indexTranslations(data) {
+  const index = {}
+  for (const [component, entries] of Object.entries(data)) {
+    index[component] = {}
+    if (Array.isArray(entries)) {
+      for (const entry of entries) {
+        if (entry.source) index[component][entry.source] = entry
+      }
+    }
+  }
+  return index
 }
 
 // Resolve all URLs from routes config (including dynamic slugs)
 async function resolveAllUrls() {
   const globals = globalData ? await globalData() : {}
   const urls = []
-
   for (const [routeKey, page] of Object.entries(routes)) {
     if (routeKey.includes('[slug]') && page.slugs) {
       const slugs = await page.slugs(globals)
@@ -63,7 +64,6 @@ async function resolveAllUrls() {
       urls.push(routeKey)
     }
   }
-
   return urls
 }
 
@@ -91,7 +91,7 @@ async function discoverTCalls() {
   return strings
 }
 
-// Phase 1: Discover all translatable strings by rendering every page + scanning t() calls
+// Phase 1: Discover translatable strings with component context
 async function discoverStrings() {
   const vite = await createServer({
     server: { middlewareMode: true },
@@ -106,12 +106,12 @@ async function discoverStrings() {
     },
   })
 
-  const allStrings = new Set()
-  const pageContexts = [] // { url, html, strings } for AI context
+  // entries: [ { source, component, tag, key } ]
+  const allEntries = []
+  const pageContexts = []
   const urls = await resolveAllUrls()
 
   for (const url of urls) {
-    // Find the template for this route
     const routeKey = Object.keys(routes).find((key) => {
       if (key.includes('[slug]')) {
         const pattern = key.replace('[slug]', '[^/]+')
@@ -124,7 +124,6 @@ async function discoverStrings() {
     const jsxPath = findTemplatePath(routeKey)
     if (!jsxPath) continue
 
-    // Get page data
     const globals = globalData ? await globalData() : {}
     const page = routes[routeKey]
     let data = { ...globals, locale: SOURCE_LOCALE }
@@ -135,7 +134,7 @@ async function discoverStrings() {
       Object.assign(data, await page.data({ slug, locale: SOURCE_LOCALE, globalData: globals }))
     }
 
-    // Set context with empty translations so all translate strings get collected
+    // Render in collect mode — h() records { source, component, tag, key } tuples
     setTranslationContext('__collect__', SOURCE_LOCALE, {})
 
     let html = ''
@@ -149,44 +148,60 @@ async function discoverStrings() {
     }
 
     const untranslated = clearTranslationContext()
-    if (untranslated.size > 0) {
-      pageContexts.push({ url, html, strings: [...untranslated] })
+    if (untranslated.length > 0) {
+      pageContexts.push({ url, html, strings: untranslated.map((e) => e.source) })
+      allEntries.push(...untranslated)
     }
-    for (const s of untranslated) allStrings.add(s)
   }
 
   await vite.close()
 
-  // Also scan for t('...') calls in source files
+  // t('...') calls from source scanning go into _global group
   const tCallStrings = await discoverTCalls()
-  for (const s of tCallStrings) allStrings.add(s)
+  for (const s of tCallStrings) {
+    // Only add if not already discovered from rendering
+    if (!allEntries.some((e) => e.source === s)) {
+      allEntries.push({ source: s, component: '_global', tag: undefined, key: undefined })
+    }
+  }
 
-  return { strings: allStrings, pageContexts }
+  return { entries: allEntries, pageContexts }
 }
 
-// Phase 2: For each target locale, diff and translate missing strings
-async function translateLocale(locale, strings, existing, pageContexts) {
-  const updated = { ...existing }
+// Deduplicate entries by id
+function dedupeEntries(entries) {
+  const seen = new Map()
+  for (const entry of entries) {
+    const id = translationId(entry.component, entry.tag, entry.source, entry.key)
+    if (!seen.has(id)) {
+      seen.set(id, { ...entry, id })
+    }
+  }
+  return [...seen.values()]
+}
+
+// Phase 2: For each locale, diff and translate
+async function translateLocale(locale, entries, existing, pageContexts) {
+  const existingIndex = indexTranslations(existing)
   const toTranslate = []
   const warnings = []
+  const updated = JSON.parse(JSON.stringify(existing)) // deep clone
 
-  for (const source of strings) {
-    const h = hash(source)
-    const entry = existing[source]
+  for (const entry of entries) {
+    const { id, source, component } = entry
+    const existingEntry = existingIndex[component]?.[source]
 
-    if (entry) {
-      if (entry.status === 'approved') {
-        // Check if source changed
-        if (entry.sourceHash && entry.sourceHash !== h) {
-          warnings.push(`Source changed for approved translation: "${source.slice(0, 50)}..."`)
+    if (existingEntry && existingEntry.id === id) {
+      if (existingEntry.status === 'approved') {
+        if (existingEntry.sourceHash && existingEntry.sourceHash !== hash(source)) {
+          warnings.push(`Source changed for approved: [${component}] "${source.slice(0, 40)}..."`)
         }
         continue
       }
-      // Auto entry — re-translate if source changed or needs translation
-      if (entry.sourceHash === h && !entry.needsTranslation) continue
+      if (existingEntry.sourceHash === hash(source) && !existingEntry.needsTranslation) continue
     }
 
-    toTranslate.push(source)
+    toTranslate.push(entry)
   }
 
   if (warnings.length > 0) {
@@ -195,41 +210,33 @@ async function translateLocale(locale, strings, existing, pageContexts) {
   }
 
   if (toTranslate.length === 0) {
-    console.log(`  ${locale}: all strings translated (${strings.size} total)`)
+    console.log(`  ${locale}: all strings translated (${entries.length} total)`)
     return updated
   }
 
   console.log(`  ${locale}: ${toTranslate.length} strings need translation`)
 
-  // Call AI with full page HTML as context
+  // Call AI
   const relevantPages = pageContexts?.filter((p) =>
-    p.strings.some((s) => toTranslate.includes(s))
+    p.strings.some((s) => toTranslate.some((e) => e.source === s))
   )
-  const translations = await callAI(locale, toTranslate, relevantPages)
+  const aiResult = await callAI(locale, toTranslate.map((e) => e.source), relevantPages)
 
-  if (translations) {
-    for (const source of toTranslate) {
-      const value = translations[source]
-      if (value) {
-        updated[source] = {
-          value,
-          status: 'auto',
-          sourceHash: hash(source),
-        }
-      }
-    }
-  } else {
-    // No API key or API error — mark strings as needing translation
-    for (const source of toTranslate) {
-      if (!updated[source]) {
-        updated[source] = {
-          value: source,
-          status: 'auto',
-          sourceHash: hash(source),
-          needsTranslation: true,
-        }
-      }
-    }
+  for (const entry of toTranslate) {
+    const { id, source, component } = entry
+    const value = aiResult?.[source] || source
+    if (!updated[component]) updated[component] = []
+
+    // Remove old entry with same id if exists
+    updated[component] = updated[component].filter((e) => e.id !== id)
+    updated[component].push({
+      id,
+      source,
+      value,
+      status: aiResult?.[source] ? 'auto' : 'auto',
+      sourceHash: hash(source),
+      ...(aiResult?.[source] ? {} : { needsTranslation: true }),
+    })
   }
 
   return updated
@@ -251,7 +258,6 @@ async function callAI(locale, strings, pageContexts) {
 
   const numbered = strings.map((s, i) => `${i + 1}. ${JSON.stringify(s)}`).join('\n')
 
-  // Parse BCP 47 locale: language-REGION
   const [lang, region] = locale.split('-')
   const localeDesc = region ? `${locale} (language: ${lang}, region: ${region})` : locale
 
@@ -265,39 +271,28 @@ async function callAI(locale, strings, pageContexts) {
     rules += `\n- NEVER translate these words, keep them exactly as-is: ${keep.join(', ')}`
   }
 
-  // Build page context — pick fewest pages that cover all strings to translate
+  // Build page context — pick fewest pages that cover all strings
   let context = ''
   if (pageContexts?.length > 0) {
-    const toTranslateSet = new Set(strings)
     const uncovered = new Set(strings)
     const selected = []
-
     while (uncovered.size > 0) {
-      // Pick page that covers the most uncovered strings
       let best = null
       let bestCount = 0
       for (const page of pageContexts) {
         const count = page.strings.filter((s) => uncovered.has(s)).length
-        if (count > bestCount) {
-          best = page
-          bestCount = count
-        }
+        if (count > bestCount) { best = page; bestCount = count }
       }
       if (!best || bestCount === 0) break
       selected.push(best)
       for (const s of best.strings) uncovered.delete(s)
     }
-
-    const pages = selected
-      .map((p) => `<!-- Page: ${p.url} -->\n${p.html}`)
-      .join('\n\n')
+    const pages = selected.map((p) => `<!-- Page: ${p.url} -->\n${p.html}`).join('\n\n')
     context = `\nHere is the HTML of representative pages where these strings appear. Use this to understand the context, tone, and placement of each string:\n\n${pages}\n`
   }
 
   let systemPrompt = 'You are a professional website translator.'
-  if (style) {
-    systemPrompt = style
-  }
+  if (style) systemPrompt = style
 
   let response
   try {
@@ -305,20 +300,10 @@ async function callAI(locale, strings, pageContexts) {
       model,
       max_tokens: 4096,
       system: systemPrompt,
-      messages: [
-        {
-          role: 'user',
-          content: `Translate the following UI text from English to ${locale}.
-${context}
-Rules:
-${rules}
-
-Strings to translate:
-${numbered}
-
-Respond with only the JSON object, no markdown code fences.`,
-        },
-      ],
+      messages: [{
+        role: 'user',
+        content: `Translate the following UI text from English to ${locale}.\n${context}\nRules:\n${rules}\n\nStrings to translate:\n${numbered}\n\nRespond with only the JSON object, no markdown code fences.`,
+      }],
     })
   } catch (err) {
     console.error(`    API error: ${err.message}`)
@@ -336,55 +321,44 @@ Respond with only the JSON object, no markdown code fences.`,
   }
 }
 
-// Phase 3: Write combined translations for ISR/API runtime
+// Phase 3: Write combined translations
 function writeCombinedTranslations(allTranslations) {
   const distDir = resolve(ROOT, 'dist/templates')
-  if (!existsSync(distDir)) {
-    mkdirSync(distDir, { recursive: true })
-  }
-  writeFileSync(
-    resolve(distDir, 'translations.json'),
-    JSON.stringify(allTranslations, null, 2)
-  )
+  if (!existsSync(distDir)) mkdirSync(distDir, { recursive: true })
+  writeFileSync(resolve(distDir, 'translations.json'), JSON.stringify(allTranslations, null, 2))
 }
 
 // Main
 async function main() {
   if (TARGET_LOCALES.length === 0) {
     console.log('No target locales configured. Add locales to src/config.js LOCALES array.')
-    console.log(`Current: LOCALES = ${JSON.stringify(LOCALES)}`)
     return
   }
 
   console.log(`Source locale: ${SOURCE_LOCALE}`)
-  console.log(`Target locales: ${TARGET_LOCALES.join(', ')}`)
-  console.log()
+  console.log(`Target locales: ${TARGET_LOCALES.join(', ')}\n`)
 
-  // Discover strings and capture page HTML for context
   console.log('Discovering translatable strings...')
-  const { strings, pageContexts } = await discoverStrings()
-  console.log(`Found ${strings.size} translatable strings across ${pageContexts.length} pages\n`)
+  const { entries: rawEntries, pageContexts } = await discoverStrings()
+  const entries = dedupeEntries(rawEntries)
+  const components = [...new Set(entries.map((e) => e.component))]
+  console.log(`Found ${entries.length} translatable strings in ${components.length} components\n`)
 
-  if (strings.size === 0) {
-    console.log('No strings with translate attribute found. Add translate to elements:')
-    console.log('  <button translate>Contact us</button>')
+  if (entries.length === 0) {
+    console.log('No strings with translate attribute found.')
     return
   }
 
-  // Translate each locale with full page context
   const allTranslations = {}
   for (const locale of TARGET_LOCALES) {
     const existing = loadTranslationFile(locale)
-    const updated = await translateLocale(locale, strings, existing, pageContexts)
+    const updated = await translateLocale(locale, entries, existing, pageContexts)
     saveTranslationFile(locale, updated)
     allTranslations[locale] = updated
   }
 
-  // Write combined file for ISR/API
   writeCombinedTranslations(allTranslations)
-
   console.log('\nDone. Translation files written to .white/translations/')
-  console.log('Combined translations written to dist/templates/translations.json')
 }
 
 main().catch((err) => {

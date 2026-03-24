@@ -93,10 +93,15 @@ export function h(tag, props, ...children) {
   props = props || {}
 
   if (typeof tag === 'function') {
-    return tag({ ...props, children: children.flat() })
+    const ctx = globalThis.__whiteTranslation
+    if (ctx?._componentStack) ctx._componentStack.push(tag.name || 'Unknown')
+    const result = tag({ ...props, children: children.flat() })
+    if (ctx?._componentStack) ctx._componentStack.pop()
+    return result
   }
 
-  const shouldTranslate = props.translate === true
+  const translateProp = props.translate
+  const shouldTranslate = translateProp === true || typeof translateProp === 'string'
 
   let attrs = ''
   for (const [k, v] of Object.entries(props)) {
@@ -137,7 +142,20 @@ export function h(tag, props, ...children) {
     .join('')
 
   if (shouldTranslate) {
+    const sourceContent = content
     content = _t(content)
+
+    // Record untranslated with full context (for discovery)
+    const ctx = globalThis.__whiteTranslation
+    if (ctx?._untranslated && content === sourceContent && ctx.locale !== ctx.sourceLocale) {
+      const component = ctx._componentStack?.at(-1) || ctx._currentComponent || '_global'
+      ctx._untranslated.push({
+        source: sourceContent,
+        component,
+        tag,
+        key: typeof translateProp === 'string' ? translateProp : undefined,
+      })
+    }
   }
 
   return `<${tag}${attrs}>${content}</${tag}>`

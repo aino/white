@@ -146,12 +146,18 @@ try {
     for (const f of localeFiles) {
       const locale = f.replace('.json', '')
       const data = JSON.parse(readFileSync(resolve(TRANSLATIONS_DIR, f), 'utf8'))
-      // Index array format into object for runtime lookup
-      const indexed = Array.isArray(data)
-        ? Object.fromEntries(data.filter((e) => e.source).map((e) => [e.source, e]))
-        : data
+      // Index component-grouped format: { Component: { source: entry } }
+      const indexed = {}
+      for (const [component, entries] of Object.entries(data)) {
+        indexed[component] = {}
+        if (Array.isArray(entries)) {
+          for (const entry of entries) {
+            if (entry.source) indexed[component][entry.source] = entry
+          }
+        }
+      }
       combined[locale] = indexed
-      // Client files stay as arrays (readable, indexed on load by white.js)
+      // Client files as-is (component-grouped, indexed on load by white.js)
       writeFileSync(resolve(clientDir, `${locale}.json`), JSON.stringify(data))
     }
     // Combined file for ISR/API (server-side, pre-indexed)
