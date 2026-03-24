@@ -32,7 +32,19 @@ function loadTranslations(locale, sourceLocale) {
 function saveTranslations(locale, translations) {
   const dir = resolve(process.cwd(), '.white/translations')
   mkdirSync(dir, { recursive: true })
-  writeFileSync(resolve(dir, `${locale}.json`), JSON.stringify(translations, null, 2) + '\n')
+  // Convert indexed format { comp: { source: entry } } to array format { comp: [...entries] }
+  const output = {}
+  for (const [component, entries] of Object.entries(translations)) {
+    if (typeof entries === 'object' && !Array.isArray(entries)) {
+      output[component] = Object.entries(entries).map(([source, entry]) => ({
+        source,
+        ...entry,
+      }))
+    } else {
+      output[component] = entries
+    }
+  }
+  writeFileSync(resolve(dir, `${locale}.json`), JSON.stringify(output, null, 2) + '\n')
 }
 
 function hash(text) {

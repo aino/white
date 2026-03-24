@@ -10,7 +10,7 @@
     {
       "id": "72907c37",
       "source": "A static site generator with persistent component architecture. Navigate between pages and watch the counter keep its state.",
-      "value": "Ein statischer Site-Generator mit persistenter Komponentenarchitektur. Navigiere zwischen Seiten und beobachte, wie der Zähler seinen Zustand behält.",
+      "value": "Ein statischer Site Generator mit persistenter Komponentenarchitektur. Navigiere zwischen Seiten und beobachte, wie der Counter seinen Status behält.",
       "status": "auto",
       "sourceHash": "dbe5a916"
     },
@@ -68,7 +68,7 @@
     {
       "id": "007637f4",
       "source": "Counter is empty",
-      "value": "Zähler ist leer",
+      "value": "Counter ist leer",
       "status": "auto",
       "sourceHash": "938ee536"
     },

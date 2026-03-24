@@ -24,7 +24,7 @@
     {
       "id": "10cbfa00",
       "source": "About (static page)",
-      "value": "Om (statisk sida)",
+      "value": "Om oss (statisk sida)",
       "status": "auto",
       "sourceHash": "74a7510c"
     },
@@ -45,7 +45,7 @@
     {
       "id": "f2f13314",
       "source": "About",
-      "value": "Om",
+      "value": "Om oss",
       "status": "auto",
       "sourceHash": "6b21fb79"
     },

@@ -3,14 +3,14 @@
     {
       "id": "9ebbcd7a",
       "source": "White Framework",
-      "value": "White Framework",
+      "value": "White-kehys",
       "status": "auto",
       "sourceHash": "5a278a25"
     },
     {
       "id": "72907c37",
       "source": "A static site generator with persistent component architecture. Navigate between pages and watch the counter keep its state.",
-      "value": "Staattinen sivuston generaattori pysyvillä komponenttiarkkitehtuureilla. Siirry sivujen välillä ja katso, kuinka laskuri säilyttää tilansa.",
+      "value": "Staattinen sivujen generaattori pysyvällä komponenttiarkitehtuurilla. Navigoi sivujen välillä ja katso, kuinka laskuri säilyttää tilansa.",
       "status": "auto",
       "sourceHash": "dbe5a916"
     },
@@ -24,7 +24,7 @@
     {
       "id": "10cbfa00",
       "source": "About (static page)",
-      "value": "Tietoja (staattinen sivu)",
+      "value": "Tietoa (staattinen sivu)",
       "status": "auto",
       "sourceHash": "74a7510c"
     },
@@ -45,7 +45,7 @@
     {
       "id": "f2f13314",
       "source": "About",
-      "value": "Tietoja",
+      "value": "Tietoa",
       "status": "auto",
       "sourceHash": "6b21fb79"
     },

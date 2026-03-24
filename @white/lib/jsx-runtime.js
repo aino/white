@@ -142,15 +142,14 @@ export function h(tag, props, ...children) {
     .join('')
 
   if (shouldTranslate) {
-    const sourceContent = content
+    const ctx = globalThis.__whiteTranslation
     content = _t(content)
 
     // Record untranslated with full context (for discovery)
-    const ctx = globalThis.__whiteTranslation
-    if (ctx?._untranslated && content === sourceContent && ctx.locale !== ctx.sourceLocale) {
+    if (ctx?._untranslated && !ctx._lastFound && ctx.locale !== ctx.sourceLocale) {
       const component = ctx._componentStack?.at(-1) || ctx._currentComponent || '_global'
       ctx._untranslated.push({
-        source: sourceContent,
+        source: content,
         component,
         tag,
         key: typeof translateProp === 'string' ? translateProp : undefined,

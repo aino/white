@@ -22,13 +22,14 @@ export function t(s) {
 
   // Component-scoped lookup
   const entry = ctx.translations[component]?.[s]
-  if (entry?.value) return entry.value
+  if (entry) { ctx._lastFound = true; return entry.value || s }
 
   // Fallback: scan all components
   for (const entries of Object.values(ctx.translations)) {
-    if (entries[s]?.value) return entries[s].value
+    if (entries[s]) { ctx._lastFound = true; return entries[s].value || s }
   }
 
+  ctx._lastFound = false
   return s
 }
 

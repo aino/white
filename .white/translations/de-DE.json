@@ -10,7 +10,7 @@
     {
       "id": "72907c37",
       "source": "A static site generator with persistent component architecture. Navigate between pages and watch the counter keep its state.",
-      "value": "Ein statischer Site-Generator mit persistenter Komponenten-Architektur. Navigiere zwischen Seiten und beobachte, wie der Counter seinen Status behält.",
+      "value": "Ein statischer Website-Generator mit persistenter Komponentenarchitektur. Navigiere zwischen Seiten und beobachte, wie der Counter seinen Zustand behält.",
       "status": "auto",
       "sourceHash": "dbe5a916"
     },
@@ -24,7 +24,7 @@
     {
       "id": "10cbfa00",
       "source": "About (static page)",
-      "value": "Über (statische Seite)",
+      "value": "Über uns (statische Seite)",
       "status": "auto",
       "sourceHash": "74a7510c"
     },
@@ -38,14 +38,14 @@
     {
       "id": "7c9012a2",
       "source": "Getting Started (dynamic slug)",
-      "value": "Getting Started (dynamischer Slug)",
+      "value": "Erste Schritte (dynamischer Slug)",
       "status": "auto",
       "sourceHash": "2c22cb58"
     },
     {
       "id": "f2f13314",
       "source": "About",
-      "value": "Über",
+      "value": "Über uns",
       "status": "auto",
       "sourceHash": "6b21fb79"
     },
