@@ -251,13 +251,33 @@ async function callAI(locale, strings, pageContexts) {
     rules += `\n- NEVER translate these words, keep them exactly as-is: ${keep.join(', ')}`
   }
 
-  // Build page context for the AI
+  // Build page context — pick fewest pages that cover all strings to translate
   let context = ''
   if (pageContexts?.length > 0) {
-    const pages = pageContexts
+    const toTranslateSet = new Set(strings)
+    const uncovered = new Set(strings)
+    const selected = []
+
+    while (uncovered.size > 0) {
+      // Pick page that covers the most uncovered strings
+      let best = null
+      let bestCount = 0
+      for (const page of pageContexts) {
+        const count = page.strings.filter((s) => uncovered.has(s)).length
+        if (count > bestCount) {
+          best = page
+          bestCount = count
+        }
+      }
+      if (!best || bestCount === 0) break
+      selected.push(best)
+      for (const s of best.strings) uncovered.delete(s)
+    }
+
+    const pages = selected
       .map((p) => `<!-- Page: ${p.url} -->\n${p.html}`)
       .join('\n\n')
-    context = `\nHere is the full HTML of the pages where these strings appear. Use this to understand the context, tone, and placement of each string:\n\n${pages}\n`
+    context = `\nHere is the HTML of representative pages where these strings appear. Use this to understand the context, tone, and placement of each string:\n\n${pages}\n`
   }
 
   let systemPrompt = 'You are a professional website translator.'
