@@ -4,21 +4,9 @@
   "images": {
     "domains": [],
     "minimumCacheTTL": 60,
-    "formats": [
-      "image/avif",
-      "image/webp"
-    ],
+    "formats": ["image/avif", "image/webp"],
     "dangerouslyAllowSVG": true,
-    "sizes": [
-      160,
-      320,
-      640,
-      960,
-      1280,
-      1600,
-      1920,
-      2240
-    ],
+    "sizes": [160, 320, 640, 960, 1280, 1600, 1920, 2240],
     "remotePatterns": [
       {
         "protocol": "https",
@@ -27,18 +15,7 @@
     ]
   },
   "routes": [
-    {
-      "handle": "filesystem"
-    },
-    {
-      "src": "^/()(/|/.*)?$",
-      "status": 404,
-      "dest": "/$1/404/index.html"
-    },
-    {
-      "src": "/.*",
-      "status": 404,
-      "dest": "/404/index.html"
-    }
+    { "handle": "filesystem" },
+    { "src": "/.*", "status": 404, "dest": "/404/index.html" }
   ]
 }
