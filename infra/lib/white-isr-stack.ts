@@ -4,6 +4,8 @@ import * as cloudfront from 'aws-cdk-lib/aws-cloudfront'
 import * as origins from 'aws-cdk-lib/aws-cloudfront-origins'
 import * as acm from 'aws-cdk-lib/aws-certificatemanager'
 import * as lambda from 'aws-cdk-lib/aws-lambda'
+import * as apigateway from 'aws-cdk-lib/aws-apigateway'
+import * as iam from 'aws-cdk-lib/aws-iam'
 import { Construct } from 'constructs'
 import * as path from 'path'
 import { fileURLToPath } from 'url'
@@ -135,6 +137,81 @@ export class WhiteIsrStack extends cdk.Stack {
       },
     })
 
+    // Revalidation Lambda — clears S3 HTML + invalidates CloudFront
+    const revalidateFunction = new lambda.Function(this, 'RevalidateHandler', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromInline(`
+const { S3Client, ListObjectsV2Command, DeleteObjectsCommand } = require("@aws-sdk/client-s3");
+const { CloudFrontClient, CreateInvalidationCommand } = require("@aws-sdk/client-cloudfront");
+
+const s3 = new S3Client({ region: "us-east-1" });
+const cf = new CloudFrontClient({ region: "us-east-1" });
+
+exports.handler = async (event) => {
+  const body = JSON.parse(event.body || "{}");
+  const secret = process.env.REVALIDATE_SECRET;
+
+  if (body.secret !== secret) {
+    return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
+  }
+
+  const bucket = process.env.BUCKET;
+  const distributionId = process.env.DISTRIBUTION_ID;
+
+  // Delete all HTML files from S3
+  let deleted = 0;
+  let token;
+  do {
+    const list = await s3.send(new ListObjectsV2Command({ Bucket: bucket, ContinuationToken: token }));
+    const htmlObjects = (list.Contents || []).filter(o => o.Key.endsWith(".html"));
+    if (htmlObjects.length > 0) {
+      await s3.send(new DeleteObjectsCommand({ Bucket: bucket, Delete: { Objects: htmlObjects.map(o => ({ Key: o.Key })) } }));
+      deleted += htmlObjects.length;
+    }
+    token = list.NextContinuationToken;
+  } while (token);
+
+  // Invalidate CloudFront
+  const inv = await cf.send(new CreateInvalidationCommand({
+    DistributionId: distributionId,
+    InvalidationBatch: { Paths: { Quantity: 1, Items: ["/*"] }, CallerReference: Date.now().toString() },
+  }));
+
+  return {
+    statusCode: 200,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ ok: true, deleted, invalidationId: inv.Invalidation.Id }),
+  };
+};
+      `),
+      environment: {
+        BUCKET: bucket.bucketName,
+        DISTRIBUTION_ID: distribution.distributionId,
+        REVALIDATE_SECRET: 'white-revalidate-2026', // Change per client
+      },
+      timeout: cdk.Duration.seconds(30),
+    })
+
+    // Grant revalidation Lambda access to S3 and CloudFront
+    bucket.grantReadWrite(revalidateFunction)
+    revalidateFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['cloudfront:CreateInvalidation'],
+        resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
+      })
+    )
+
+    // API Gateway
+    const api = new apigateway.LambdaRestApi(this, 'RevalidateApi', {
+      handler: revalidateFunction,
+      proxy: false,
+      restApiName: `white-isr-${clientName}-revalidate`,
+    })
+
+    const revalidateResource = api.root.addResource('revalidate')
+    revalidateResource.addMethod('POST')
+
     // Outputs
     new cdk.CfnOutput(this, 'DistributionDomain', {
       value: distribution.distributionDomainName,
@@ -149,6 +226,11 @@ export class WhiteIsrStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'BucketName', {
       value: bucket.bucketName,
       description: 'S3 bucket for deploying assets and pages',
+    })
+
+    new cdk.CfnOutput(this, 'RevalidateUrl', {
+      value: `${api.url}revalidate`,
+      description: 'POST to this URL with { "secret": "..." } to purge all cached pages',
     })
   }
 }
