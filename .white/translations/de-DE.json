@@ -8,6 +8,13 @@
       "sourceHash": "5a278a25"
     },
     {
+      "id": "39fa7fbe",
+      "source": "Rendered:",
+      "value": "Gerendert:",
+      "status": "auto",
+      "sourceHash": "be967fcf"
+    },
+    {
       "source": "A static site generator with persistent component architecture. Navigate between pages and watch the counter keep its state.",
       "id": "72907c37",
       "value": "Ein statischer Website-Generator mit persistenter Komponentenarchitektur. Navigiere zwischen Seiten und beobachte, wie der Counter seinen Zustand behält.",
@@ -55,74 +62,6 @@
       "value": "Elemente hinzugefügt",
       "status": "auto",
       "sourceHash": "4ab3cdab"
-    },
-    {
-      "source": "Hello World",
-      "value": "Hallo Welt",
-      "status": "auto",
-      "sourceHash": "0a4d55a8"
-    },
-    {
-      "source": "Getting Started",
-      "value": "Erste Schritte",
-      "status": "auto",
-      "sourceHash": "010b85ad"
-    },
-    {
-      "id": "8e80f4bd",
-      "source": "Rendered: 2026-03-24T21:31:34.262Z",
-      "value": "Gerendert: 2026-03-24T21:31:34.262Z",
-      "status": "auto",
-      "sourceHash": "f0aec286"
-    },
-    {
-      "id": "cc39beb9",
-      "source": "Rendered: 2026-03-24T21:37:20.651Z",
-      "value": "Gerendert: 2026-03-24T21:37:20.651Z",
-      "status": "auto",
-      "sourceHash": "ea0f60cc"
-    },
-    {
-      "id": "19105265",
-      "source": "Rendered: 2026-03-24T21:38:09.626Z",
-      "value": "Gerendert: 2026-03-24T21:38:09.626Z",
-      "status": "auto",
-      "sourceHash": "7fb6c235"
-    },
-    {
-      "id": "555923fd",
-      "source": "Rendered: 2026-03-24T21:40:44.192Z",
-      "value": "Gerendert: 2026-03-24T21:40:44.192Z",
-      "status": "auto",
-      "sourceHash": "e9e34c71"
-    },
-    {
-      "id": "7a1ff633",
-      "source": "Rendered: 2026-03-24T21:42:22.678Z",
-      "value": "Gerendert: 2026-03-24T21:42:22.678Z",
-      "status": "auto",
-      "sourceHash": "a2e458db"
-    },
-    {
-      "id": "39fa7fbe",
-      "source": "Rendered:",
-      "value": "Gerendert:",
-      "status": "auto",
-      "sourceHash": "be967fcf"
-    },
-    {
-      "id": "58895458",
-      "source": "I am a boy",
-      "value": "Ich bin ein Junge",
-      "status": "auto",
-      "sourceHash": "e912f604"
-    },
-    {
-      "id": "9fd507d4",
-      "source": "I am a girl",
-      "value": "Ich bin ein Mädchen",
-      "status": "auto",
-      "sourceHash": "a28b8335"
     }
   ],
   "CounterContent": [
@@ -153,18 +92,6 @@
       "value": "Aktueller Pfad: <span class=\"pathname\">/about</span>",
       "status": "auto",
       "sourceHash": "6e7dab51"
-    },
-    {
-      "source": "Current path: <span class=\"pathname\">/about/hello-world</span>",
-      "value": "Aktueller Pfad: <span class=\"pathname\">/about/hello-world</span>",
-      "status": "auto",
-      "sourceHash": "2070cb6b"
-    },
-    {
-      "source": "Current path: <span class=\"pathname\">/about/getting-started</span>",
-      "value": "Aktueller Pfad: <span class=\"pathname\">/about/getting-started</span>",
-      "status": "auto",
-      "sourceHash": "e3ed7223"
     }
   ]
 }

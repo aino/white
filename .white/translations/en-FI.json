@@ -8,6 +8,13 @@
       "sourceHash": "5a278a25"
     },
     {
+      "id": "39fa7fbe",
+      "source": "Rendered:",
+      "value": "Rendered:",
+      "status": "auto",
+      "sourceHash": "be967fcf"
+    },
+    {
       "id": "72907c37",
       "source": "A static site generator with persistent component architecture. Navigate between pages and watch the counter keep its state.",
       "value": "A static site generator with persistent component architecture. Navigate between pages and watch the counter keep its state.",
@@ -55,62 +62,6 @@
       "value": "Items added",
       "status": "auto",
       "sourceHash": "4ab3cdab"
-    },
-    {
-      "id": "8e80f4bd",
-      "source": "Rendered: 2026-03-24T21:31:34.262Z",
-      "value": "Rendered: 2026-03-24T21:31:34.262Z",
-      "status": "auto",
-      "sourceHash": "f0aec286"
-    },
-    {
-      "id": "cc39beb9",
-      "source": "Rendered: 2026-03-24T21:37:20.651Z",
-      "value": "Rendered: 2026-03-24T21:37:20.651Z",
-      "status": "auto",
-      "sourceHash": "ea0f60cc"
-    },
-    {
-      "id": "19105265",
-      "source": "Rendered: 2026-03-24T21:38:09.626Z",
-      "value": "Rendered: 2026-03-24T21:38:09.626Z",
-      "status": "auto",
-      "sourceHash": "7fb6c235"
-    },
-    {
-      "id": "555923fd",
-      "source": "Rendered: 2026-03-24T21:40:44.192Z",
-      "value": "Rendered: 2026-03-24T21:40:44.192Z",
-      "status": "auto",
-      "sourceHash": "e9e34c71"
-    },
-    {
-      "id": "7a1ff633",
-      "source": "Rendered: 2026-03-24T21:42:22.678Z",
-      "value": "Rendered: 2026-03-24T21:42:22.678Z",
-      "status": "auto",
-      "sourceHash": "a2e458db"
-    },
-    {
-      "id": "39fa7fbe",
-      "source": "Rendered:",
-      "value": "Rendered:",
-      "status": "auto",
-      "sourceHash": "be967fcf"
-    },
-    {
-      "id": "58895458",
-      "source": "I am a boy",
-      "value": "I am a boy",
-      "status": "auto",
-      "sourceHash": "e912f604"
-    },
-    {
-      "id": "9fd507d4",
-      "source": "I am a girl",
-      "value": "I am a girl",
-      "status": "auto",
-      "sourceHash": "a28b8335"
     }
   ],
   "CounterContent": [

@@ -185,13 +185,18 @@ async function translateLocale(locale, entries, existing, pageContexts) {
   const existingIndex = indexTranslations(existing)
   const toTranslate = []
   const warnings = []
-  const updated = JSON.parse(JSON.stringify(existing)) // deep clone
+  const updated = {} // start fresh — only active entries survive
+  const activeIds = new Set(entries.map((e) => e.id))
 
   for (const entry of entries) {
     const { id, source, component } = entry
     const existingEntry = existingIndex[component]?.[source]
 
     if (existingEntry && existingEntry.id === id) {
+      // Keep existing translation
+      if (!updated[component]) updated[component] = []
+      updated[component].push(existingEntry)
+
       if (existingEntry.status === 'approved') {
         if (existingEntry.sourceHash && existingEntry.sourceHash !== hash(source)) {
           warnings.push(`Source changed for approved: [${component}] "${source.slice(0, 40)}..."`)
@@ -199,10 +204,24 @@ async function translateLocale(locale, entries, existing, pageContexts) {
         continue
       }
       if (existingEntry.sourceHash === hash(source) && !existingEntry.needsTranslation) continue
+
+      // Source changed — remove from updated, add to toTranslate
+      updated[component] = updated[component].filter((e) => e.id !== id)
     }
 
     toTranslate.push(entry)
   }
+
+  // Count removed entries
+  let removed = 0
+  for (const [component, entries] of Object.entries(existing)) {
+    if (Array.isArray(entries)) {
+      for (const entry of entries) {
+        if (entry.id && !activeIds.has(entry.id)) removed++
+      }
+    }
+  }
+  if (removed > 0) console.log(`  ${locale}: removed ${removed} unused translations`)
 
   if (warnings.length > 0) {
     console.log(`\n  Warnings for ${locale}:`)

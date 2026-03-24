@@ -5,8 +5,6 @@ export default function Home({ locale, path, timestamp }) {
   return (
     <Layout locale={locale} path={path}>
       <h1 translate>White Framework</h1>
-      <p translate>I am a boy</p>
-      <p translate>I am a girl</p>
       {timestamp && (
         <p>
           <small>
