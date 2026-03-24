@@ -14,7 +14,10 @@
       }
     ]
   },
-  "rewrites": [
-    { "source": "/((?!api/).*)", "destination": "/api" }
+  "routes": [
+    { "handle": "filesystem" },
+    { "src": "/api/hello", "dest": "/api/hello" },
+    { "src": "/api/revalidate", "dest": "/api/revalidate" },
+    { "src": "/(.*)", "dest": "/api/[[...path]]?path=$1" }
   ]
 }

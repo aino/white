@@ -71,9 +71,7 @@ async function render(path) {
 
 export const GET = async (req) => {
   const url = new URL(req.url)
-  // Vercel rewrites are transparent — req.url has the original path
-  // Strip /api prefix only if directly accessed (not via rewrite)
-  const pathname = url.pathname
-  const path = pathname.replace(/^\/api$/, '/').replace(/^\/api\//, '/').replace(/\/$/, '') || '/'
+  const rawPath = url.searchParams.get('path') || url.pathname.replace(/^\/api/, '')
+  const path = rawPath.replace(/\/$/, '') || '/'
   return render(path)
 }
