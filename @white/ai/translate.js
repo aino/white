@@ -31,7 +31,7 @@ export function translationId(component, tag, source, key) {
 // Raw fetch to Anthropic API — no SDK dependency (Lambda@Edge code size limit)
 export async function translateStrings(locale, strings, config) {
   const apiKey = '__ANTHROPIC_API_KEY__'
-  if (!apiKey || apiKey === '__ANTHROPIC_API_KEY__') return null
+  if (!apiKey || !apiKey.startsWith('sk-')) return null
 
   const model = config?.model || 'claude-haiku-4-5-20251001'
   const style = config?.style
