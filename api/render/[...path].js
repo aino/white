@@ -38,7 +38,6 @@ export const GET = async (req) => {
     return new Response('Template not found', { status: 500 })
   }
 
-  context.data.timestamp = new Date().toISOString()
   const html = '<!DOCTYPE html>' + Template(context.data)
 
   return new Response(html, {

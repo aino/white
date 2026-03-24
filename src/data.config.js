@@ -1,6 +1,7 @@
 export const globalData = async () => {
   return {
     site: { name: 'White' },
+    timestamp: new Date().toISOString(),
     posts: [
       { slug: 'hello-world', title: 'Hello World', excerpt: 'Your first post.' },
       { slug: 'getting-started', title: 'Getting Started', excerpt: 'How to use White.' },
