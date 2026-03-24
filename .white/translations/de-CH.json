@@ -1,0 +1,57 @@
+{
+  "White Framework": {
+    "value": "White Framework",
+    "status": "auto",
+    "sourceHash": "5a278a25"
+  },
+  "A static site generator with persistent component architecture. Navigate between pages and watch the counter keep its state.": {
+    "value": "Ein statischer Site-Generator mit persistenter Komponentenarchitektur. Navigiere zwischen Seiten und beobachte, wie der Zähler seinen Zustand behält.",
+    "status": "auto",
+    "sourceHash": "dbe5a916"
+  },
+  "Add": {
+    "value": "Hinzufügen",
+    "status": "auto",
+    "sourceHash": "61cc55aa"
+  },
+  "Counter is empty": {
+    "value": "Zähler ist leer",
+    "status": "auto",
+    "sourceHash": "938ee536"
+  },
+  "Current path: <span class=\"pathname\">/</span>": {
+    "value": "Aktueller Pfad: <span class=\"pathname\">/</span>",
+    "status": "auto",
+    "sourceHash": "4c5b01ea"
+  },
+  "Pages": {
+    "value": "Seiten",
+    "status": "auto",
+    "sourceHash": "600584c2"
+  },
+  "About (static page)": {
+    "value": "Über uns (statische Seite)",
+    "status": "auto",
+    "sourceHash": "74a7510c"
+  },
+  "Hello World (dynamic slug)": {
+    "value": "Hello World (dynamischer Slug)",
+    "status": "auto",
+    "sourceHash": "883b7963"
+  },
+  "Getting Started (dynamic slug)": {
+    "value": "Erste Schritte (dynamischer Slug)",
+    "status": "auto",
+    "sourceHash": "2c22cb58"
+  },
+  "Current path: <span class=\"pathname\">/about</span>": {
+    "value": "Aktueller Pfad: <span class=\"pathname\">/about</span>",
+    "status": "auto",
+    "sourceHash": "6e7dab51"
+  },
+  "Items added": {
+    "value": "Elemente hinzugefügt",
+    "status": "auto",
+    "sourceHash": "4ab3cdab"
+  }
+}
