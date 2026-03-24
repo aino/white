@@ -65,7 +65,7 @@ export default function Layout({
       <body class={bodyclass}>
         <Header />
         <main id="app">{children}</main>
-        <Footer />
+        <Footer timestamp={new Date().toISOString()} />
       </body>
     </html>
   )
