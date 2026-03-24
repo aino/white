@@ -12,7 +12,6 @@ export const routes = {
   '/': {
     data: async () => ({
       path: '',
-      timestamp: new Date().toISOString(),
     }),
   },
   '/about': {

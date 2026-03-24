@@ -1,7 +1,7 @@
 import Layout from 'src/components/Layout'
 import Counter from 'src/components/Counter'
 
-export default function Home({ locale, path, timestamp }) {
+export default function Home({ locale, path }) {
   return (
     <Layout locale={locale} path={path}>
       <h1>White</h1>
@@ -9,7 +9,6 @@ export default function Home({ locale, path, timestamp }) {
         A static site generator with persistent component architecture. Navigate
         between pages and watch the counter keep its state.
       </p>
-      {timestamp && <p>Rendered at: {timestamp}</p>}
       <Counter value={0} pathname={path || '/'} />
       <nav>
         <h2>Pages</h2>
