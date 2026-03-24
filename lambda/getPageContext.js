@@ -1,4 +1,4 @@
-export async function getPageContext(url, { routes, globalData, locales }) {
+export async function getPageContext(url, { routes, globalData, locales, draft = false }) {
   if (url.startsWith('/api/')) {
     return null
   }
@@ -19,7 +19,7 @@ export async function getPageContext(url, { routes, globalData, locales }) {
   // Find the matching page or route
   let key = `/${segments.join('/')}`
   let page = routes[key]
-  let data = { ...globals, locale }
+  let data = { ...globals, locale, draft }
   let slug = null
 
   // Handle dynamic routes
@@ -37,7 +37,7 @@ export async function getPageContext(url, { routes, globalData, locales }) {
         if (page.data) {
           Object.assign(
             data,
-            await page.data({ slug, locale, globalData: globals })
+            await page.data({ slug, locale, globalData: globals, draft })
           )
         }
         return { key, slug, data }
@@ -53,7 +53,7 @@ export async function getPageContext(url, { routes, globalData, locales }) {
         if (staticPage.data) {
           Object.assign(
             data,
-            await staticPage.data({ locale, globalData: globals })
+            await staticPage.data({ locale, globalData: globals, draft })
           )
         }
         return { key: staticKey, slug: null, data }
@@ -65,7 +65,7 @@ export async function getPageContext(url, { routes, globalData, locales }) {
   if (page.data) {
     Object.assign(
       data,
-      await page.data({ locale, globalData: globals })
+      await page.data({ locale, globalData: globals, draft })
     )
   }
   return { key, slug, data }

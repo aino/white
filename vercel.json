@@ -18,6 +18,8 @@
     { "handle": "filesystem" },
     { "src": "/api/hello", "dest": "/api/hello" },
     { "src": "/api/revalidate", "dest": "/api/revalidate" },
+    { "src": "/api/draft", "dest": "/api/draft" },
+    { "src": "/api/draft-disable", "dest": "/api/draft-disable" },
     { "src": "/(.*)", "dest": "/api/[[...path]]?path=$1" }
   ]
 }

@@ -24,7 +24,7 @@ function injectAssets(html, assets) {
   )
 }
 
-async function render(path) {
+async function render(path, { draft = false } = {}) {
   const registry = await loadTemplates()
   const assetManifest = await loadAssets()
 
@@ -32,6 +32,7 @@ async function render(path) {
     routes,
     globalData,
     locales: LOCALES,
+    draft,
   })
 
   if (!context) {
@@ -69,9 +70,26 @@ async function render(path) {
   )
 }
 
+function parseCookies(cookieHeader) {
+  if (!cookieHeader) return {}
+  return Object.fromEntries(
+    cookieHeader.split(';').map((c) => c.trim().split('='))
+  )
+}
+
 export const GET = async (req) => {
   const url = new URL(req.url)
   const rawPath = url.searchParams.get('path') || url.pathname.replace(/^\/api/, '')
   const path = rawPath.replace(/\/$/, '') || '/'
-  return render(path)
+
+  const cookies = parseCookies(req.headers.get('cookie'))
+  const draft = cookies.__draft === 'true'
+
+  const response = await render(path, { draft })
+
+  if (draft) {
+    response.headers.set('X-Robots-Tag', 'noindex, nofollow')
+  }
+
+  return response
 }
