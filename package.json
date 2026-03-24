@@ -17,7 +17,8 @@
     "vercel-build": "npm run build:isr",
     "start": "node @white/lib/previewServer.js",
     "translate": "node scripts/translate.js",
-    "lint": "eslint ."
+    "lint": "eslint .",
+    "deploy": "node scripts/deploy.js"
   },
   "devDependencies": {
     "@anthropic-ai/sdk": "^0.80.0",

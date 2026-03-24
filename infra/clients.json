@@ -1,0 +1,9 @@
+{
+  "white-test": {
+    "bucket": "white-isr-white-test",
+    "distributionId": "E111NKUSRINWHB",
+    "vercelUrl": "white-git-feature-isr-aino.vercel.app",
+    "revalidateSecret": "white-revalidate-2026",
+    "revalidateUrl": "https://nv2muz9nn1.execute-api.us-east-1.amazonaws.com/prod/revalidate"
+  }
+}
