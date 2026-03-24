@@ -134,6 +134,24 @@ try {
   console.warn('Could not build asset manifest:', e.message)
 }
 
+// Bundle translations for ISR/API runtime
+const TRANSLATIONS_DIR = resolve(ROOT, '.white/translations')
+try {
+  const localeFiles = readdirSync(TRANSLATIONS_DIR).filter((f) => f.endsWith('.json'))
+  if (localeFiles.length > 0) {
+    const combined = {}
+    for (const f of localeFiles) {
+      const locale = f.replace('.json', '')
+      combined[locale] = JSON.parse(readFileSync(resolve(TRANSLATIONS_DIR, f), 'utf8'))
+    }
+    writeFileSync(resolve(OUT_DIR, 'translations.json'), JSON.stringify(combined))
+    console.log(`\nTranslations bundled (${localeFiles.map((f) => f.replace('.json', '')).join(', ')})`)
+  }
+} catch {
+  // No translations yet — write empty object so imports don't fail
+  writeFileSync(resolve(OUT_DIR, 'translations.json'), '{}')
+}
+
 console.log('Templates compiled:')
 for (const [route, path] of Object.entries(registry)) {
   console.log(`  ${route} → ${path}`)

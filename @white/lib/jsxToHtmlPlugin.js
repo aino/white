@@ -84,7 +84,8 @@ export default function jsxToHtmlPlugin() {
                           html = await compileTemplate(
                             jsxPath,
                             { ...data, locale: locale },
-                            vite
+                            vite,
+                            { locales: LOCALES }
                           )
                         } catch (error) {
                           console.warn(`Failed to compile template ${jsxPath}:`, error.message)
@@ -174,7 +175,8 @@ export default function jsxToHtmlPlugin() {
                     let html = await compileTemplate(
                       jsxPath,
                       { ...data, locale: locale },
-                      vite
+                      vite,
+                      { locales: LOCALES }
                     )
 
                     // Replace @/ imports with actual asset paths and add CSS links

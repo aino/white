@@ -146,7 +146,7 @@ export default function virtualHtmlPlugin() {
             }
           }
           const { templatePath, data } = templateContext
-          let html = await compileTemplate(templatePath, data, server)
+          let html = await compileTemplate(templatePath, data, server, { locales: LOCALES, dev: true })
           // Vite's transformIndexHtml requires trailing slash to correctly resolve
           // HTML proxy modules for inline scripts. Normalize here so the actual
           // URL in the browser stays clean (no trailing slash).

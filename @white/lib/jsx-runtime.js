@@ -94,8 +94,11 @@ export function h(tag, props, ...children) {
     return tag({ ...props, children: children.flat() })
   }
 
+  const shouldTranslate = props.translate === true
+
   let attrs = ''
   for (const [k, v] of Object.entries(props)) {
+    if (k === 'translate') continue
     if (v == null || v === false) continue
 
     let value = v
@@ -118,10 +121,22 @@ export function h(tag, props, ...children) {
     return `<${tag}${attrs}>`
   }
 
-  const content = children
+  let content = children
     .flat()
     .map((child) => (child == null ? '' : String(child)))
     .join('')
+
+  if (shouldTranslate) {
+    const ctx = globalThis.__whiteTranslation
+    if (ctx && ctx.locale !== ctx.sourceLocale) {
+      const entry = ctx.translations[content]
+      if (entry?.value) {
+        content = entry.value
+      } else {
+        ctx._untranslated.add(content)
+      }
+    }
+  }
 
   return `<${tag}${attrs}>${content}</${tag}>`
 }

@@ -4,7 +4,7 @@ import Counter from 'src/components/Counter'
 export default function Post({ title, locale, path, slug, post }) {
   return (
     <Layout locale={locale} title={title} path={path}>
-      <h1>{post?.title || slug}</h1>
+      <h1 translate>{post?.title || slug}</h1>
       <p>{post?.excerpt}</p>
       <p>
         This page was generated from a dynamic <code>[slug]</code> route. The
