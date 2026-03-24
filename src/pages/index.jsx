@@ -7,7 +7,9 @@ export default function Home({ locale, path, timestamp }) {
       <h1 translate>White Framework</h1>
       {timestamp && (
         <p>
-          <small translate>Rendered: {timestamp}</small>
+          <small>
+            <span translate>Rendered:</span> {timestamp}
+          </small>
         </p>
       )}
       <p translate>
