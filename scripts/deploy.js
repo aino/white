@@ -41,7 +41,7 @@ run(`aws s3 sync dist/assets s3://${client.bucket}/assets/ --cache-control "publ
 // 4. Update Lambda function code
 const lambdaName = `white-isr-${clientName}`
 const functionArn = execSync(
-  `aws lambda list-functions --region us-east-1 --query "Functions[?starts_with(FunctionName, '${lambdaName}')].FunctionArn" --output text`,
+  `aws lambda list-functions --region us-east-1 --query "Functions[?contains(FunctionName, '${lambdaName}') && contains(FunctionName, 'IsrHandler')].FunctionArn | [0]" --output text`,
   { encoding: 'utf-8' }
 ).trim()
 
