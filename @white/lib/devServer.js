@@ -44,10 +44,11 @@ const apiDir = join(__dirname, '../../api')
 
 ;(async () => {
   try {
-    const files = await fs.readdir(apiDir)
+    const files = await fs.readdir(apiDir, { withFileTypes: true })
 
     await Promise.all(
-      files.map(async (file) => {
+      files.filter((f) => f.isFile() && f.name.endsWith('.js')).map(async (f) => {
+        const file = f.name
         const route = `/api/${file.replace('.js', '')}` // Add /api prefix
         const module = await import(join(apiDir, file))
         app.all(route, async (req, res) => {
