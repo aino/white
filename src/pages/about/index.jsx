@@ -4,7 +4,7 @@ import Counter from 'src/components/Counter'
 export default function About({ title, locale, path }) {
   return (
     <Layout locale={locale} title={title} path={path}>
-      <h1>About</h1>
+      <h1 translate>{title}</h1>
       <p>
         This is a static page. The counter below is the same persistent
         component from the home page — its state survives navigation because it

@@ -63,5 +63,20 @@
     "value": "Aktueller Pfad: <span class=\"pathname\">/about/hello-world</span>",
     "status": "auto",
     "sourceHash": "2070cb6b"
+  },
+  "About": {
+    "value": "Über uns",
+    "status": "auto",
+    "sourceHash": "6b21fb79"
+  },
+  "Getting Started": {
+    "value": "Erste Schritte",
+    "status": "auto",
+    "sourceHash": "010b85ad"
+  },
+  "Current path: <span class=\"pathname\">/about/getting-started</span>": {
+    "value": "Aktueller Pfad: <span class=\"pathname\">/about/getting-started</span>",
+    "status": "auto",
+    "sourceHash": "e3ed7223"
   }
 }

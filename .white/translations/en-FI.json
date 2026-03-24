@@ -53,5 +53,10 @@
     "value": "Items added",
     "status": "auto",
     "sourceHash": "4ab3cdab"
+  },
+  "About": {
+    "value": "Tietoa",
+    "status": "auto",
+    "sourceHash": "6b21fb79"
   }
 }

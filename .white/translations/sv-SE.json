@@ -53,5 +53,10 @@
     "value": "Objekt tillagda",
     "status": "auto",
     "sourceHash": "4ab3cdab"
+  },
+  "About": {
+    "value": "Om oss",
+    "status": "auto",
+    "sourceHash": "6b21fb79"
   }
 }

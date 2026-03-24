@@ -53,5 +53,10 @@
     "value": "Elemente hinzugefügt",
     "status": "auto",
     "sourceHash": "4ab3cdab"
+  },
+  "About": {
+    "value": "Über uns",
+    "status": "auto",
+    "sourceHash": "6b21fb79"
   }
 }
