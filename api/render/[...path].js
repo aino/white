@@ -1,27 +1,12 @@
 import { getPageContext } from '../../lambda/getPageContext.js'
+import templates from '../../dist/templates/registry.js'
 import { globalData, routes } from '../../src/data.config.js'
 import { LOCALES } from '../../src/config.js'
-
-let templates = null
-
-async function loadTemplates() {
-  if (templates) return templates
-  try {
-    templates = (await import('../../dist/templates/registry.js')).default
-  } catch {
-    throw new Error(
-      'Templates not compiled. Run: node scripts/compile-templates.js'
-    )
-  }
-  return templates
-}
 
 export const GET = async (req) => {
   const url = new URL(req.url)
   const path =
     url.pathname.replace(/^\/api\/render/, '').replace(/\/$/, '') || '/'
-
-  const registry = await loadTemplates()
 
   const context = await getPageContext(path, {
     routes,
@@ -30,8 +15,7 @@ export const GET = async (req) => {
   })
 
   if (!context) {
-    // Try 404 template
-    const NotFound = registry['/404']
+    const NotFound = templates['/404']
     if (NotFound) {
       const ctx404 = await getPageContext('/404', {
         routes,
@@ -49,7 +33,7 @@ export const GET = async (req) => {
     return new Response('Not Found', { status: 404 })
   }
 
-  const Template = registry[context.key]
+  const Template = templates[context.key]
   if (!Template) {
     return new Response('Template not found', { status: 500 })
   }
