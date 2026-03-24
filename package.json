@@ -10,6 +10,7 @@
     "api": "nodemon --watch @white/lib/devServer.js --watch api/ @white/lib/devServer.js",
     "dev:api": "bun --bun run dev & bun --bun run api & wait",
     "build": "vite build",
+    "build:templates": "node scripts/compile-templates.js",
     "start": "node @white/lib/previewServer.js",
     "lint": "eslint .",
     "vercel:config": "node @white/lib/vercelConfig.js"
