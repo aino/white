@@ -3,6 +3,9 @@ export function setGlobalData(data) {
 }
 
 export function getGlobalData() {
+  if (typeof window !== 'undefined') {
+    console.warn('getGlobalData() is server-only.')
+  }
   return globalThis.__whiteGlobalData || {}
 }
 
