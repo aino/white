@@ -14,7 +14,7 @@
     "build:templates": "node scripts/compile-templates.js",
     "build:lambda": "node scripts/bundle-lambda.js",
     "build:isr": "npm run build:assets && npm run build:templates",
-    "vercel-build": "npm run build:isr",
+    "vercel-build": "node scripts/vercel-build.js",
     "start": "node @white/lib/previewServer.js",
     "lint": "eslint .",
     "deploy:isr": "node scripts/deploy.js"

@@ -11,3 +11,4 @@ export const LOCALES = [
   'fi-FI', // Finnish (Finland)
 ]
 export const PORT = 4667
+export const ISR = true
