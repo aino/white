@@ -56,6 +56,7 @@ import {
   CloudWatchLogsClient,
   StartQueryCommand,
   GetQueryResultsCommand,
+  DescribeLogGroupsCommand,
 } from '@aws-sdk/client-cloudwatch-logs'
 
 import { readFileSync } from 'fs'
@@ -116,39 +117,60 @@ const endTime = Math.floor(Date.now() / 1000)
 console.log(`Querying last ${hours}h across ${REGIONS.length} regions...`)
 console.log(`Query: ${query}\n`)
 
-// Find the Lambda function name pattern for log group
-const logGroupPattern = `/aws/lambda/us-east-1.white-isr-${config.name}`
+// Find log groups matching our ISR function in a given region
+async function findLogGroups(client) {
+  const groups = []
+  for (const prefix of [
+    `/aws/lambda/us-east-1.white-isr-${config.name}`,
+    `/aws/lambda/white-isr-${config.name}`,
+  ]) {
+    try {
+      const res = await client.send(new DescribeLogGroupsCommand({ logGroupNamePrefix: prefix }))
+      for (const g of res.logGroups || []) {
+        groups.push(g.logGroupName)
+      }
+    } catch {}
+  }
+  return groups
+}
 
 async function queryRegion(region) {
   const client = new CloudWatchLogsClient({ region })
+  const logGroups = await findLogGroups(client)
 
-  try {
-    const startResult = await client.send(new StartQueryCommand({
-      logGroupName: logGroupPattern,
-      startTime,
-      endTime,
-      queryString: query,
-      limit: 100,
-    }))
+  if (logGroups.length === 0) return []
 
-    const queryId = startResult.queryId
+  const allResults = []
+  for (const logGroupName of logGroups) {
+    try {
+      const startResult = await client.send(new StartQueryCommand({
+        logGroupName,
+        startTime,
+        endTime,
+        queryString: query,
+        limit: 100,
+      }))
 
-    // Poll for results
-    let status = 'Running'
-    let results = null
-    while (status === 'Running' || status === 'Scheduled') {
-      await new Promise(r => setTimeout(r, 500))
-      const response = await client.send(new GetQueryResultsCommand({ queryId }))
-      status = response.status
-      results = response.results
+      const queryId = startResult.queryId
+
+      // Poll for results
+      let status = 'Running'
+      let results = null
+      while (status === 'Running' || status === 'Scheduled') {
+        await new Promise(r => setTimeout(r, 500))
+        const response = await client.send(new GetQueryResultsCommand({ queryId }))
+        status = response.status
+        results = response.results
+      }
+
+      allResults.push(...(results || []))
+    } catch (err) {
+      if (err.name === 'ResourceNotFoundException') continue
+      throw err
     }
-
-    return results || []
-  } catch (err) {
-    // Log group might not exist in this region
-    if (err.name === 'ResourceNotFoundException') return []
-    throw err
   }
+
+  return allResults
 }
 
 // Query all regions in parallel
