@@ -1,5 +1,3 @@
-import { t as _t } from '../translate.js'
-
 const VOID = new Set([
   'area',
   'base',
@@ -93,19 +91,11 @@ export function h(tag, props, ...children) {
   props = props || {}
 
   if (typeof tag === 'function') {
-    const ctx = globalThis.__whiteTranslation
-    if (ctx?._componentStack) ctx._componentStack.push(tag.name || 'Unknown')
-    const result = tag({ ...props, children: children.flat() })
-    if (ctx?._componentStack) ctx._componentStack.pop()
-    return result
+    return tag({ ...props, children: children.flat() })
   }
-
-  const translateProp = props.translate
-  const shouldTranslate = translateProp === true || typeof translateProp === 'string'
 
   let attrs = ''
   for (const [k, v] of Object.entries(props)) {
-    if (k === 'translate') continue
     if (v == null || v === false) continue
 
     let value = v
@@ -136,26 +126,10 @@ export function h(tag, props, ...children) {
     return `<${tag}${attrs}>`
   }
 
-  let content = children
+  const content = children
     .flat()
     .map((child) => (child == null ? '' : String(child)))
     .join('')
-
-  if (shouldTranslate) {
-    const ctx = globalThis.__whiteTranslation
-    content = _t(content)
-
-    // Record untranslated with full context (for discovery)
-    if (ctx?._untranslated && !ctx._lastFound && ctx.locale !== ctx.sourceLocale) {
-      const component = ctx._componentStack?.at(-1) || ctx._currentComponent || '_global'
-      ctx._untranslated.push({
-        source: content,
-        component,
-        tag,
-        key: typeof translateProp === 'string' ? translateProp : undefined,
-      })
-    }
-  }
 
   return `<${tag}${attrs}>${content}</${tag}>`
 }

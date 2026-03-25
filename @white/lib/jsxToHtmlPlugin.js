@@ -29,7 +29,7 @@ export default function jsxToHtmlPlugin() {
           jsx: 'transform',
           jsxFactory: 'h',
           jsxFragment: 'Fragment',
-          jsxInject: `import { h, Fragment } from 'lib/jsx-runtime'\nimport { t } from '@white/translate'`,
+          jsxInject: `import { h, Fragment } from 'lib/jsx-runtime'`,
         },
       })
 
@@ -85,7 +85,6 @@ export default function jsxToHtmlPlugin() {
                             jsxPath,
                             { ...data, locale: locale },
                             vite,
-                            { locales: LOCALES }
                           )
                         } catch (error) {
                           console.warn(`Failed to compile template ${jsxPath}:`, error.message)

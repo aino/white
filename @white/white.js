@@ -10,38 +10,6 @@ import 'white/css'
 import { removeTrailingSlash } from './utils/string'
 import createContext from './utils/context'
 
-// Load translations for current locale (client-side)
-function indexTranslations(data) {
-  const indexed = {}
-  for (const [component, entries] of Object.entries(data)) {
-    indexed[component] = {}
-    if (Array.isArray(entries)) {
-      for (const entry of entries) {
-        if (entry.source) indexed[component][entry.source] = entry
-      }
-    }
-  }
-  return indexed
-}
-
-const translationsReady = (async () => {
-  const locale = document.documentElement.dataset.locale
-  const sourceLocale = LOCALES[0]
-  if (locale && locale !== sourceLocale) {
-    try {
-      const res = await fetch(`/assets/translations/${locale}.json`)
-      if (res.ok) {
-        const data = await res.json()
-        const translations = indexTranslations(data)
-        globalThis.__whiteTranslation = {
-          locale, sourceLocale, translations,
-          _untranslated: [], _componentStack: [], _currentComponent: null,
-        }
-      }
-    } catch {}
-  }
-})()
-
 export const cachedPages = new Map()
 
 export const config = {
@@ -114,9 +82,6 @@ const mountComponents = async (container) => {
     const componentScript = components[componentName]
 
     if (componentScript && !mountedComponents.has(node)) {
-      // Set translation component context for t() calls
-      const tCtx = globalThis.__whiteTranslation
-      if (tCtx) tCtx._currentComponent = componentName
       const { ctx, cleanup } = createContext(node)
       try {
         const result = await componentScript(node, ctx)
@@ -331,8 +296,7 @@ if (config.fakeSPA) {
   })
 }
 
-const white = async () => {
-  await translationsReady
+const white = () => {
   cachedPages.set(location.pathname, document.documentElement.outerHTML)
   const app = id('app')
 

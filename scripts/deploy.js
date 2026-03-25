@@ -64,11 +64,6 @@ for (const assoc of distConfig.DefaultCacheBehavior.LambdaFunctionAssociations?.
 writeFileSync('/tmp/cf-update.json', JSON.stringify(distConfig))
 run(`aws cloudfront update-distribution --id ${client.distributionId} --distribution-config file:///tmp/cf-update.json --if-match ${etag} --no-cli-pager > /dev/null`)
 
-// Download translations from S3 for client-side use
-step('Syncing translations from S3')
-run(`aws s3 sync s3://${client.bucket}/_translations/ dist/assets/translations/ --no-cli-pager 2>/dev/null || true`)
-run(`aws s3 sync dist/assets/translations/ s3://${client.bucket}/assets/translations/ --cache-control "public, max-age=300" --no-cli-pager 2>/dev/null || true`)
-
 // Wait + invalidate
 step('Waiting for CloudFront propagation (~3-5 min)')
 run(`aws cloudfront wait distribution-deployed --id ${client.distributionId}`)

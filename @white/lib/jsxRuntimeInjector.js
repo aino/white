@@ -11,7 +11,7 @@ export default function jsxRuntimeInjector() {
       if (importJsxRegex.test(code)) {
         // Inject the JSX runtime at the top
         return {
-          code: `import { h, Fragment } from 'lib/jsx-runtime'\nimport { t } from '@white/translate'\n${code}`,
+          code: `import { h, Fragment } from 'lib/jsx-runtime'\n${code}`,
           map: null
         }
       }

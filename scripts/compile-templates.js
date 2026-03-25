@@ -78,7 +78,7 @@ await build({
   jsx: 'transform',
   jsxFactory: 'h',
   jsxFragment: 'Fragment',
-  inject: [resolve(ROOT, '@white/lib/jsx-runtime.js'), resolve(ROOT, '@white/translate.js')],
+  inject: [resolve(ROOT, '@white/lib/jsx-runtime.js')],
   plugins: [aliasPlugin, ignoreCssPlugin],
   platform: 'node',
   target: 'node18',

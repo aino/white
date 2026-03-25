@@ -16,12 +16,10 @@
     "build:isr": "npm run build:assets && npm run build:templates",
     "vercel-build": "npm run build:isr",
     "start": "node @white/lib/previewServer.js",
-    "translate": "node scripts/translate.js",
     "lint": "eslint .",
     "deploy": "node scripts/deploy.js white-test"
   },
   "devDependencies": {
-    "@anthropic-ai/sdk": "^0.80.0",
     "eslint": "^9.16.0",
     "eslint-config-prettier": "^10.1.8",
     "eslint-plugin-prettier": "^5.5.5",
