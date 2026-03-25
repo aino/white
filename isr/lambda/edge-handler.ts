@@ -34,10 +34,11 @@ export async function handler(event: any) {
   const country = headers['cloudfront-viewer-country']?.[0]?.value || 'unknown'
   const device = headers['cloudfront-is-mobile-viewer']?.[0]?.value === 'true' ? 'mobile'
     : headers['cloudfront-is-tablet-viewer']?.[0]?.value === 'true' ? 'tablet' : 'desktop'
+  const ua = headers['user-agent']?.[0]?.value || ''
 
   const log = (status: string, source: string) => {
     console.log(JSON.stringify({
-      uri, status, source, country, device,
+      uri, status, source, country, device, ua,
       duration: Date.now() - start,
     }))
   }
