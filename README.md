@@ -2,15 +2,27 @@
 
 A performance-first frontend platform for e-commerce.
 
-White generates static HTML from JSX templates with on-demand page building at the edge. Designed for large-scale storefronts — thousands of products, hundreds of locales, sub-second page loads — at a fraction of the infrastructure cost of traditional frameworks.
+White renders static HTML from JSX templates. No framework runtime, no hydration, no virtual DOM. Pages load in milliseconds with 2KB of client JavaScript. Interactive components mount as islands — only where needed, only the JS required.
 
-## Built for e-commerce scale
+Deploy as a static site to any hosting platform, or enable on-demand page generation at the edge for large-scale storefronts with hundreds of locales and thousands of products.
 
-- **200 locales, 5000 products** — pages built on-demand, not at build time
-- **2KB client JavaScript** — no framework runtime, no hydration, no virtual DOM
-- **$50/month hosting** — S3 + CloudFront instead of $5k/month on serverless platforms
-- **Sub-second page loads** — static HTML from CDN edge, interactive islands where needed
-- **You own the infrastructure** — AWS resources in your account, no vendor lock-in
+## Why
+
+Reactive frameworks like React and Next.js were designed for interactive applications. E-commerce pages aren't interactive applications — they're documents with a few interactive elements.
+
+**The runtime tax.** React ships 40-100KB+ of JavaScript to every visitor to re-render what's already static HTML. A product page is 95% text and images. The framework runtime is pure overhead.
+
+**The hydration problem.** React needs to "hydrate" server-rendered HTML by re-attaching event listeners and reconciling state. This requires serializing all component data into the page as JSON. On a category page with 200 products, that's easily 2MB of embedded JSON — data that was already rendered as HTML but needs to be duplicated for React to work. This bloats page weight, slows time-to-interactive, and increases bandwidth costs at scale.
+
+**Server components solve a self-created problem.** Server-side React was introduced to reduce client-side JavaScript. But you only had too much client-side JavaScript because you used React for everything in the first place. The fix added a new mental model (server vs client components), new restrictions (`'use client'`, serialization boundaries), and new failure modes — for a net result that's still slower than serving a static HTML file.
+
+**Streaming and Suspense are patches on patches.** Streaming exists because server rendering is slow enough that you need to show something while waiting. Loading skeletons exist because hydration is slow enough that components aren't interactive yet. Each solution patches the previous one. A static page from a CDN doesn't need any of this — it arrives complete.
+
+**Caching complexity.** Next.js has five caching mechanisms: ISR, `unstable_cache`, `revalidateTag`, `revalidatePath`, `cache()` — each with its own behavior and gotchas. White has one: the page is static, a webhook invalidates it.
+
+**Cost at scale.** Serverless rendering means every cache miss boots a React app on a server. At 200 locales and thousands of products, this adds up fast. A Lambda that concatenates template strings is orders of magnitude cheaper than one that boots React, resolves server components, and streams a response.
+
+**React is great — where it's needed.** White doesn't replace React. It removes React from the 90% of pages that never needed it (product, category, blog, editorial), and lets you mount it as an island on the 10% that do (cart, checkout, account, real-time search).
 
 ## How it works
 
@@ -19,35 +31,7 @@ White separates what most frameworks combine:
 - **Static pages** (product, category, blog) are server-rendered JSX templates served as plain HTML. Zero JavaScript unless a component needs interactivity.
 - **Interactive components** (cart, search, size selector) mount as islands on the static page using vanilla JS or React — only where needed, only the JS required.
 - **Data** comes from any source (CMS, commerce API, database) via async functions. No framework-specific data layer.
-- **Caching** is handled by CloudFront. Content updates invalidate specific pages via webhook — the next visitor gets a fresh page, everyone else gets it from cache.
-
-## Why not React for e-commerce?
-
-React was designed for interactive applications — dashboards, social feeds, real-time collaboration. E-commerce product pages aren’t interactive applications. They’re documents with a few interactive elements.
-
-**The runtime tax.** React ships 40-100KB+ of JavaScript to every visitor to re-render what’s already static HTML. A product page is 95% text and images. The framework runtime is pure overhead.
-
-**The hydration problem.** React needs to "hydrate" server-rendered HTML by re-attaching event listeners and reconciling state. This requires serializing all component data into the page as JSON. On a category page with 200 products, that’s easily 2MB of embedded JSON in the source — data that was already rendered as HTML but needs to be duplicated for React to work. This bloats page weight, slows down time-to-interactive, and increases bandwidth costs at scale.
-
-**Server components solve a self-created problem.** Server-side React was introduced to reduce client-side JavaScript. But you only had too much client-side JavaScript because you used React for everything in the first place. The fix added a new mental model (server vs client components), new restrictions (`’use client’`, serialization boundaries), and new failure modes — for a net result that’s still slower than serving a static HTML file.
-
-**Streaming and Suspense are patches on patches.** Streaming exists because server rendering is slow enough that you need to show something while waiting. Loading skeletons exist because hydration is slow enough that components aren’t interactive yet. Each solution patches the previous one. A static page from a CDN doesn’t need any of this — it arrives complete.
-
-**Caching complexity.** Next.js has five caching mechanisms: ISR, `unstable_cache`, `revalidateTag`, `revalidatePath`, `cache()` — each with its own behavior and gotchas. White has one: CloudFront serves the page, a webhook invalidates it.
-
-**Cost at scale.** Serverless rendering means every cache miss boots a React app on a server. At 200 locales and thousands of products, this adds up fast. A Lambda that concatenates strings and returns HTML is orders of magnitude cheaper than one that boots React, resolves server components, and streams a response.
-
-**React is great — where it’s needed.** White doesn’t replace React. It removes React from the 90% of pages that never needed it (product, category, blog, editorial), and lets you mount it as an island on the 10% that do (cart, checkout, account, real-time search).
-
-## What’s unique
-
-- **Physical DOM node transfer** between pages (with event listeners intact)
-- **Zero virtual DOM overhead** — just 2KB of client JavaScript
-- **Server-side JSX** for familiar component syntax
-- **Opt-in persistence** via the `key` attribute
-- **Automatic component lifecycle** with event delegation and cleanup
-- **Smart prefetching** on hover
-- **On-demand ISR** via AWS Lambda@Edge — pages built when visited, cached globally
+- **Locales** are a first-class config — automatic URL prefixing, localized hrefs, multi-market support out of the box.
 
 ## Get Started
 
@@ -58,7 +42,7 @@ React was designed for interactive applications — dashboards, social feeds, re
 
 ## Core Concepts
 
-### 🎯 Persistent Component Architecture
+### Persistent Component Architecture
 
 Two attributes control component behavior:
 
@@ -71,7 +55,7 @@ They are independent. A `key`-only element persists without any script. A `data-
 <div data-component="counter" key="counter" data-value={value}>
 ```
 
-### 🔧 Component Structure
+### Component Structure
 
 Each component can have three files:
 
@@ -107,7 +91,7 @@ export default async function counter(node, { on, state }) {
 }
 ```
 
-### 🧹 Lifecycle Context
+### Lifecycle Context
 
 Both component scripts and page scripts receive a **lifecycle context** as a second argument. The context provides helpers that automatically clean up when the component unmounts or the user navigates away:
 
@@ -138,7 +122,7 @@ No manual cleanup needed — the framework handles teardown automatically.
 
 **Persistent components** (those with a `key` attribute) are only cleaned up when they no longer appear in the next page's DOM. If the component exists on both pages, it is physically transferred and the cleanup is _not_ called.
 
-### 📁 Pages & Routing
+### Pages & Routing
 
 The directory structure inside `src/pages/` defines the URL routes. Each `index.jsx` becomes an HTML page:
 
@@ -177,7 +161,7 @@ Routes in `data.config.js` must mirror this directory structure — they provide
 └── data.config.js              # Route data configuration
 ```
 
-### 🎨 Layouts
+### Layouts
 
 ```jsx
 // components/Layout/index.jsx
@@ -201,7 +185,31 @@ export default function Layout({ children, lang }) {
 }
 ```
 
-### 🔀 Main Entry & Page Scripts
+### Global Data
+
+Data that every page needs (site config, navigation, market settings) can be accessed from any component without prop drilling:
+
+```javascript
+// data.config.js
+export const globalData = async ({ locale }) => {
+  const market = await fetchMarket(locale)
+  return { site: { name: 'My Store' }, market }
+}
+```
+
+```jsx
+// Any component, any nesting depth
+import { getGlobalData } from '@white/utils/globalData'
+
+export default function Header() {
+  const { site, market } = getGlobalData()
+  return <header>{site.name} — {market.currency}</header>
+}
+```
+
+`getGlobalData()` is server-only — it reads from a render context set by the framework before each page render. Components receive the data without the page template having to forward it.
+
+### Main Entry & Page Scripts
 
 **`src/js/main.js`** is the global entry script. It runs once on initial page load and exports `pageTransition` — a function that controls how `#app` swaps between pages during SPA navigation:
 
@@ -235,9 +243,7 @@ export default function about(app, { on, listen, state, onCleanup }) {
 
 **Styles** are automatically discovered and bundled from all `.css` files in `pages/` and `components/`. Just create a `.css` file next to your component or page and it will be included in the build.
 
-**Note:** White uses plain CSS only - no SCSS, Less, or CSS modules. Use class-based scoping for component isolation.
-
-### 📐 Dynamic Templates
+### Dynamic Templates
 
 JSX templates can be imported and called directly in client-side scripts. This lets you re-render components dynamically using the same templates that generated the initial HTML:
 
@@ -263,7 +269,7 @@ Since JSX compiles to plain string-returning functions, they work seamlessly as 
 
 **Important:** Export the inner content as a separate function and use that for client-side re-renders. The default export includes the `data-component` wrapper — re-rendering with it would replace the stable root node and break event delegation via `on`. Use `node.innerHTML` with the inner function only.
 
-### 📊 State Management
+### State Management
 
 Simple state utility for reactive updates. Inside components, use `state` from the lifecycle context (auto-destroyed on unmount). Outside components, import it directly:
 
@@ -289,27 +295,23 @@ const unsubscribe = count.subscribe((newVal, oldVal) => {
 })
 ```
 
-### 🎯 Data Configuration
+### Data Configuration
 
 All page data is configured in `data.config.js`. It exports two things: `globalData` and `routes`. Both `globalData()` and route `data()` functions are async, so you can fetch from databases, APIs, or the file system.
 
-**`globalData()`** is an async function that runs once at build time. Its return value is passed to every route's `data()` and `slugs()` functions:
+**`globalData()`** runs before each page render. Its return value is available to every component via `getGlobalData()` and passed to every route's `data()` function:
 
 ```javascript
 // data.config.js
-export const globalData = async () => {
-  // Fetch from a database, API, file system, etc.
+export const globalData = async ({ locale }) => {
   return {
     site: { name: 'My Site' },
-    posts: [
-      { slug: 'hello-world', title: 'Hello World' },
-      { slug: 'getting-started', title: 'Getting Started' },
-    ],
+    products: await fetchProducts(locale),
   }
 }
 ```
 
-**`routes`** maps URL paths to data loaders. The `data()` function receives `{ locale, globalData }` and its return value is passed as props to the page component:
+**`routes`** maps URL paths to data loaders. The `data()` function receives `{ locale, globalData, draft }` and its return value is passed as props to the page component:
 
 ```javascript
 export const routes = {
@@ -347,13 +349,15 @@ export const routes = {
 }
 ```
 
-At build time, White generates a static HTML page for each slug. Locales are configured in `config.js`:
+Locales are configured in `config.js`:
 
 ```javascript
-export const LOCALES = ['en']
+export const LOCALES = ['en-US', 'sv-SE', 'de-DE']
 ```
 
-### 🔌 API Routes
+The first locale is the default (no URL prefix). Other locales get prefixed automatically: `/sv-SE/about`, `/de-DE/about`. Internal `href` attributes are localized automatically during rendering — no `Link` component needed.
+
+### API Routes
 
 Create serverless API endpoints by adding files to the `api/` directory:
 
@@ -380,76 +384,6 @@ File names map to routes: `api/hello.js` → `/api/hello`. Use named exports (`G
 **Development:** Run `npm run dev:api` to start both Vite and the API server. Vite proxies `/api` requests to the Express-based API server automatically.
 
 **Production:** On Vercel, each file in `api/` is deployed as a serverless function — no extra configuration needed.
-
-## Key Benefits
-
-### 🚀 Performance
-
-- **2KB JavaScript bundle** (vs 50-200KB+ for React/Vue)
-- **No virtual DOM diffing** overhead
-- **Smart prefetching** for instant navigation
-- **Automatic code splitting** by page
-
-### 🧠 Developer Experience
-
-- **JSX components** with familiar syntax
-- **Hot reload** in development
-- **Built-in image optimization**
-
-### 🎯 Architecture
-
-- **Multi-page app benefits** (SEO, performance, simplicity)
-- **SPA-like navigation** with state persistence
-- **Component isolation** with automatic cleanup
-- **Progressive enhancement** - works without JavaScript
-
-## Example: Persistent Shopping Cart
-
-```jsx
-// components/Cart/index.jsx
-export default function Cart({ items = [] }) {
-  return (
-    <div
-      data-component="cart"
-      key="shopping-cart"
-      data-items={JSON.stringify(items)}
-    >
-      <h3>Cart ({items.length})</h3>
-      {items.map((item) => (
-        <div key={item.id}>
-          {item.name} - ${item.price}
-          <button data-remove={item.id}>Remove</button>
-        </div>
-      ))}
-      <button data-checkout>Checkout</button>
-    </div>
-  )
-}
-```
-
-```javascript
-// components/Cart/cart.js
-import { Cart } from './index' // Import the JSX template for re-rendering
-
-export default async function cart(node, { on, state }) {
-  const cartState = state(JSON.parse(node.dataset.items || '[]'), (items) => {
-    // Re-render the component using the JSX template
-    node.innerHTML = Cart({ items })
-  })
-
-  on('click', '[data-remove]', (e, target) => {
-    cartState.set((items) =>
-      items.filter((item) => item.id !== target.dataset.remove)
-    )
-  })
-
-  on('click', '[data-checkout]', () => {
-    // Handle checkout
-  })
-}
-```
-
-The cart maintains its state as users navigate between pages.
 
 ## Draft Mode
 
@@ -485,7 +419,9 @@ npm run build  # Generates ./dist
 
 ### ISR (on-demand static generation)
 
-For large-scale sites (thousands of products, hundreds of locales), enable ISR to build pages on-demand and cache them globally via AWS CloudFront. See [ISR.md](ISR.md) for full setup.
+For large-scale sites (thousands of products, hundreds of locales), enable ISR to build pages on-demand and cache them globally via AWS CloudFront. Pages are rendered by Lambda@Edge on first visit and cached — subsequent visitors get the page instantly from the edge. Content updates invalidate specific pages via webhook.
+
+See [ISR.md](ISR.md) for full setup.
 
 ```js
 // src/config.js
