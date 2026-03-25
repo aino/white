@@ -1,13 +1,9 @@
 // CMS webhook translator — resolves content changes to page paths,
 // then calls the AWS revalidation API to purge those pages.
 //
-// This file is client-specific. Customize resolvePaths() for each
-// client's CMS data model and routing structure.
-//
-// ENV vars (set by agency during setup):
-//   REVALIDATE_URL    — AWS API Gateway URL
-//   REVALIDATE_SECRET — shared secret for AWS endpoint
-//   CMS_WEBHOOK_SECRET — secret from the CMS (optional)
+// Customize resolvePaths() for each client's CMS data model.
+
+import config from '../isr.config.js'
 
 // Customize this function per client.
 // Maps CMS webhook payloads to page paths that need revalidation.
@@ -47,11 +43,11 @@ export const POST = async (req) => {
   const paths = await resolvePaths(payload)
 
   // Call AWS revalidation API
-  const response = await fetch(process.env.REVALIDATE_URL, {
+  const response = await fetch(config.aws.revalidateUrl, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({
-      secret: process.env.REVALIDATE_SECRET,
+      secret: config.aws.revalidateSecret,
       paths, // null = purge all, array = purge specific paths
     }),
   })

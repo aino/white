@@ -3,7 +3,7 @@ import { resolve } from 'path'
 import { cpSync, existsSync, readFileSync, writeFileSync } from 'fs'
 
 const ROOT = resolve(import.meta.dirname, '..')
-const OUT_DIR = resolve(ROOT, 'infra/lambda/bundle')
+const OUT_DIR = resolve(ROOT, 'isr/lambda/bundle')
 const TEMPLATES_DIR = resolve(ROOT, 'dist/templates')
 
 // Bucket name passed as CLI arg: node scripts/bundle-lambda.js white-isr-client-name
@@ -25,11 +25,11 @@ if (!existsSync(resolve(TEMPLATES_DIR, 'assets.json'))) {
 }
 
 // Copy templates and assets.json into a location the edge handler can import
-cpSync(TEMPLATES_DIR, resolve(ROOT, 'infra/lambda/_templates'), { recursive: true })
+cpSync(TEMPLATES_DIR, resolve(ROOT, 'isr/lambda/_templates'), { recursive: true })
 
 // Bundle the edge handler with all dependencies into a single file
 await build({
-  entryPoints: [resolve(ROOT, 'infra/lambda/edge-handler.ts')],
+  entryPoints: [resolve(ROOT, 'isr/lambda/edge-handler.ts')],
   bundle: true,
   format: 'cjs',
   platform: 'node',
