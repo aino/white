@@ -21,6 +21,24 @@ White separates what most frameworks combine:
 - **Data** comes from any source (CMS, commerce API, database) via async functions. No framework-specific data layer.
 - **Caching** is handled by CloudFront. Content updates invalidate specific pages via webhook — the next visitor gets a fresh page, everyone else gets it from cache.
 
+## Why not React for e-commerce?
+
+React was designed for interactive applications — dashboards, social feeds, real-time collaboration. E-commerce product pages aren’t interactive applications. They’re documents with a few interactive elements.
+
+**The runtime tax.** React ships 40-100KB+ of JavaScript to every visitor to re-render what’s already static HTML. A product page is 95% text and images. The framework runtime is pure overhead.
+
+**The hydration problem.** React needs to "hydrate" server-rendered HTML by re-attaching event listeners and reconciling state. This requires serializing all component data into the page as JSON. On a category page with 200 products, that’s easily 2MB of embedded JSON in the source — data that was already rendered as HTML but needs to be duplicated for React to work. This bloats page weight, slows down time-to-interactive, and increases bandwidth costs at scale.
+
+**Server components solve a self-created problem.** Server-side React was introduced to reduce client-side JavaScript. But you only had too much client-side JavaScript because you used React for everything in the first place. The fix added a new mental model (server vs client components), new restrictions (`’use client’`, serialization boundaries), and new failure modes — for a net result that’s still slower than serving a static HTML file.
+
+**Streaming and Suspense are patches on patches.** Streaming exists because server rendering is slow enough that you need to show something while waiting. Loading skeletons exist because hydration is slow enough that components aren’t interactive yet. Each solution patches the previous one. A static page from a CDN doesn’t need any of this — it arrives complete.
+
+**Caching complexity.** Next.js has five caching mechanisms: ISR, `unstable_cache`, `revalidateTag`, `revalidatePath`, `cache()` — each with its own behavior and gotchas. White has one: CloudFront serves the page, a webhook invalidates it.
+
+**Cost at scale.** Serverless rendering means every cache miss boots a React app on a server. At 200 locales and thousands of products, this adds up fast. A Lambda that concatenates strings and returns HTML is orders of magnitude cheaper than one that boots React, resolves server components, and streams a response.
+
+**React is great — where it’s needed.** White doesn’t replace React. It removes React from the 90% of pages that never needed it (product, category, blog, editorial), and lets you mount it as an island on the 10% that do (cart, checkout, account, real-time search).
+
 ## What’s unique
 
 - **Physical DOM node transfer** between pages (with event listeners intact)
