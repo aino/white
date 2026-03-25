@@ -6,5 +6,5 @@ if (ISR) {
   execSync('npm run build:isr', { stdio: 'inherit' })
 } else {
   console.log('Static mode — building HTML + assets + templates')
-  execSync('npm run build && npm run build:templates', { stdio: 'inherit' })
+  execSync('npm run build && node scripts/compile-templates.js', { stdio: 'inherit' })
 }
