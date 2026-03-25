@@ -1,6 +1,6 @@
 import { build } from 'esbuild'
 import { resolve } from 'path'
-import { writeFileSync, readFileSync, mkdirSync, readdirSync, statSync } from 'fs'
+import { writeFileSync, readFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'fs'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const PAGES_DIR = resolve(ROOT, 'src/pages')
@@ -43,12 +43,16 @@ const aliasPlugin = {
       const filter = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
       build.onResolve({ filter }, (args) => {
         let resolved = args.path.replace(prefix, target)
-        // Resolve directory imports to index.jsx
+        // Resolve directory imports to index.jsx, or append .js extension
         try {
           if (statSync(resolved).isDirectory()) {
             resolved = resolve(resolved, 'index.jsx')
           }
-        } catch {}
+        } catch {
+          if (!resolved.match(/\.\w+$/) && existsSync(resolved + '.js')) {
+            resolved = resolved + '.js'
+          }
+        }
         return { path: resolved }
       })
     }
