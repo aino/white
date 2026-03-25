@@ -431,7 +431,7 @@ Preview unpublished CMS content without affecting the live site. Works in both s
 
 **Setup:** Set `DRAFT_SECRET` as a Vercel environment variable.
 
-**Enable:** CMS preview button opens:
+**Enable:** CMS preview button opens the **Vercel URL** (not the production domain — draft mode is handled by Vercel, not CloudFront):
 ```
 https://yoursite.vercel.app/api/draft?secret=YOUR_DRAFT_SECRET&slug=/about
 ```
