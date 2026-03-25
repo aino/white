@@ -33,6 +33,17 @@ export class WhiteIsrStack extends cdk.Stack {
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
     })
 
+    // S3 bucket for CloudFront access logs (full traffic analytics)
+    const logBucket = new s3.Bucket(this, 'AccessLogs', {
+      bucketName: `white-isr-${clientName}-logs`,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
+      blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
+      lifecycleRules: [
+        { expiration: cdk.Duration.days(90) },
+      ],
+      objectOwnership: s3.ObjectOwnership.OBJECT_WRITER,
+    })
+
     // SSL certificate (only if custom domain is provided)
     let certificate: acm.ICertificate | undefined
     if (domain) {
@@ -113,6 +124,8 @@ export class WhiteIsrStack extends cdk.Stack {
       domainNames,
       certificate,
       defaultRootObject: 'index.html',
+      logBucket,
+      logFilePrefix: 'cdn/',
 
       // Default behavior: S3 pages with Lambda@Edge ISR
       defaultBehavior: {
@@ -262,6 +275,11 @@ exports.handler = async (event) => {
     new cdk.CfnOutput(this, 'RevalidateSecret', {
       value: revalidateSecret,
       description: 'Secret for the revalidation webhook',
+    })
+
+    new cdk.CfnOutput(this, 'LogBucket', {
+      value: logBucket.bucketName,
+      description: 'S3 bucket for CloudFront access logs (90 day retention)',
     })
   }
 }
