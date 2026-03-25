@@ -1,5 +1,6 @@
 import Header from '../Header'
 import Footer from '../Footer'
+import { getGlobalData } from '@white/utils/globalData'
 
 export default function Layout({
   locale,
@@ -10,7 +11,8 @@ export default function Layout({
   image,
   path, // eslint-disable-line no-unused-vars
 }) {
-  const siteName = 'White'
+  const { site } = getGlobalData()
+  const siteName = site?.name || 'White'
   return (
     <html
       lang={(locale || 'en').split('-')[0]}

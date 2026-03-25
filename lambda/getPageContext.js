@@ -1,3 +1,5 @@
+import { setGlobalData } from '../@white/utils/globalData.js'
+
 export async function getPageContext(url, { routes, globalData, locales, draft = false }) {
   if (url.startsWith('/api/')) {
     return null
@@ -13,8 +15,9 @@ export async function getPageContext(url, { routes, globalData, locales, draft =
     locale = segments.shift()
   }
 
-  // Get global data
-  const globals = globalData ? await globalData() : {}
+  // Get global data and set render context
+  const globals = globalData ? await globalData({ locale, draft }) : {}
+  setGlobalData(globals)
 
   // Find the matching page or route
   let key = `/${segments.join('/')}`

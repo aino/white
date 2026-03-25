@@ -1,3 +1,4 @@
+import { setGlobalData } from '../utils/globalData.js'
 import * as config from '../../src/data.config.js'
 import { resolve } from 'path'
 import { PAGES_DIR } from './index'
@@ -26,11 +27,12 @@ export async function getPageContext(url, globalDataCache = null) {
 
   // Get global data
   if (!globalDataCache && globalData) {
-    globalDataCache = await globalData()
+    globalDataCache = await globalData({ locale })
   }
 
-  // Merge global data with locale
+  // Merge global data with locale and set render context
   const globals = globalDataCache || {}
+  setGlobalData(globals)
 
   // Find the matching page or route
   let key = `/${segments.join('/')}`

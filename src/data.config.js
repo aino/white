@@ -1,4 +1,4 @@
-export const globalData = async () => {
+export const globalData = async ({ locale } = {}) => {
   return {
     site: { name: 'White' },
     posts: [
