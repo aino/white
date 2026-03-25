@@ -103,7 +103,7 @@ white-isr-my-project.RevalidateUrl = https://xxx.execute-api.us-east-1.amazonaws
 
 **Vercel** (Project Settings → Environment Variables):
 - `REVALIDATE_SECRET` — same secret used in CDK deploy
-- `DRAFT_SECRET` — secret for CMS preview mode (used by `/api/draft`)
+- `DRAFT_SECRET` — see [Draft Mode](README.md#draft-mode) in README
 
 **GitHub Actions** (Settings → Secrets → Actions) for auto-deploy:
 - `AWS_ACCESS_KEY_ID`
