@@ -42,6 +42,7 @@ async function render(path, { draft = false } = {}) {
         routes,
         globalData,
         locales: LOCALES,
+        draft,
       })
       return new Response(
         injectAssets('<!DOCTYPE html>' + NotFound(ctx404?.data || { locale: LOCALES[0] }), assetManifest),
