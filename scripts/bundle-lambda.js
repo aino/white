@@ -56,8 +56,8 @@ function resolveWhitePlugin() {
         path: resolve(ROOT, args.path.replace('..', '.')),
       }))
 
-      // Ignore CSS imports
-      build.onResolve({ filter: /\.css$/ }, () => ({
+      // Ignore CSS/SCSS imports
+      build.onResolve({ filter: /\.(css|scss)$/ }, () => ({
         path: 'css-stub',
         namespace: 'css-stub',
       }))

@@ -241,7 +241,23 @@ export default function about(app, { on, listen, state, onCleanup }) {
 }
 ```
 
-**Styles** are automatically discovered and bundled from all `.css` files in `pages/` and `components/`. Just create a `.css` file next to your component or page and it will be included in the build.
+**Styles** are automatically discovered and bundled from all `.css` and `.scss` files in `pages/` and `components/`. Just create a stylesheet next to your component or page and it will be included in the build.
+
+**SCSS and CSS Modules** are supported via Vite. Install `sass` to enable SCSS:
+
+```bash
+npm install -D sass
+```
+
+Then use `.module.css` or `.module.scss` for scoped class names:
+
+```jsx
+import styles from './product.module.scss'
+
+export default function Product({ name }) {
+  return <div class={styles.wrapper}>{name}</div>
+}
+```
 
 ### Dynamic Templates
 

@@ -63,7 +63,7 @@ const aliasPlugin = {
 const ignoreCssPlugin = {
   name: 'ignore-css',
   setup(build) {
-    build.onResolve({ filter: /\.css$/ }, () => ({
+    build.onResolve({ filter: /\.(css|scss)$/ }, () => ({
       path: 'css-stub',
       namespace: 'css-stub',
     }))

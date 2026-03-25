@@ -22,7 +22,7 @@ export default function VirtualAutoCssPlugin() {
           // Recursively scan subdirectories
           const subCssFiles = await scanDirectory(relativePath)
           cssFiles.push(...subCssFiles)
-        } else if (entry.name.endsWith('.css')) {
+        } else if (entry.name.endsWith('.css') || entry.name.endsWith('.scss')) {
           cssFiles.push(relativePath)
         }
       }
