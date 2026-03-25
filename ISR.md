@@ -19,8 +19,9 @@ yourdomain.com → CloudFront
 ├── /api/*        → Vercel (edge functions)
 ├── /_vercel/*    → Vercel (image optimization)
 └── /*            → S3 + Lambda@Edge
-                     Cache HIT → serve instantly
-                     Cache MISS → Lambda renders page, saves to S3, caches in CloudFront
+                     Cache HIT  → serve instantly
+                     Cache MISS → Lambda@Edge reads pre-rendered page from S3 (fast)
+                                  or renders on-demand if not in S3 (first visit after deploy)
 ```
 
 **Production** traffic goes through CloudFront. AWS handles page serving at scale.
@@ -123,27 +124,38 @@ npm run deploy:isr
 This runs:
 1. Builds JS/CSS assets (Vite, no HTML)
 2. Compiles page templates (esbuild)
-3. Bundles Lambda handler with templates
+3. Bundles Lambda handlers (edge + render) with templates
 4. Uploads assets to S3
-5. Updates Lambda function code
-6. Publishes new Lambda version
+5. Updates Lambda@Edge and render Lambda function code
+6. Publishes new Lambda@Edge version
 7. Updates CloudFront to use new version
-8. Waits for CloudFront propagation (~3-5 min)
-9. Invalidates CloudFront cache
+8. Clears HTML pages from S3 (hashed assets are kept)
+9. Waits for CloudFront propagation (~3-5 min)
+10. Invalidates CloudFront cache
 
 ### Auto-deploy via GitHub Actions
 
 Push to `main` triggers `.github/workflows/deploy.yml` which runs `npm run deploy:isr`. Requires AWS credentials and `REVALIDATE_SECRET` in GitHub Secrets.
 
-## Revalidation
+## Revalidation (Stale-While-Revalidate)
+
+When content changes in the CMS, pages are pre-rendered to S3 **before** CloudFront is invalidated. This means no visitor ever waits for a page to be built — they either get the old cached page (during CloudFront propagation) or the fresh pre-rendered page from S3.
 
 ### How it works
 
 1. CMS sends webhook to Vercel `/api/revalidate`
 2. `resolvePaths()` maps the CMS event to page paths
 3. Vercel calls the AWS revalidation API with those paths
-4. AWS invalidates CloudFront for those paths
-5. Next visitor triggers Lambda@Edge to render fresh
+4. The **render Lambda** pre-renders each page (all locale variants) and saves to S3
+5. After rendering completes, CloudFront is invalidated
+6. During propagation (~3-5 min): visitors get the old cached page
+7. After propagation: Lambda@Edge reads the pre-rendered page from S3 (instant)
+
+For `paths: null` (purge everything), CloudFront is invalidated directly without pre-rendering — Lambda@Edge renders on the first hit, same as after a deploy.
+
+### After a deploy
+
+The deploy clears all HTML from S3 (hashed assets are kept). The first visitor to each page triggers an on-demand render via Lambda@Edge. After the first CMS webhook, the SWR behavior kicks in for all revalidated pages.
 
 ### Customizing `api/revalidate.js`
 

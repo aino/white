@@ -47,6 +47,21 @@ run(`aws lambda wait function-updated --function-name ${functionArn} --region us
 const version = out(`aws lambda publish-version --function-name ${functionArn} --region us-east-1 --query "Version" --output text`)
 console.log(`  Published version ${version}`)
 
+// Update Render Lambda
+step('Updating Render Lambda')
+const renderFunctionArn = out(
+  `aws lambda list-functions --region us-east-1 --query "Functions[?contains(FunctionName, 'white-isr-${name}') && contains(FunctionName, 'RenderHandler')].FunctionArn | [0]" --output text`
+)
+
+if (renderFunctionArn && renderFunctionArn !== 'None') {
+  run(`cd isr/lambda/render-bundle && zip -j /tmp/white-render-lambda.zip index.js`)
+  run(`aws lambda update-function-code --function-name ${renderFunctionArn} --zip-file fileb:///tmp/white-render-lambda.zip --region us-east-1 --no-cli-pager > /dev/null`)
+  run(`aws lambda wait function-updated --function-name ${renderFunctionArn} --region us-east-1`)
+  console.log('  Render Lambda updated')
+} else {
+  console.warn('  Render Lambda not found — skipping (run CDK deploy to create it)')
+}
+
 // Update CloudFront Lambda association
 step('Updating CloudFront')
 const cfRaw = out(`aws cloudfront get-distribution-config --id ${aws.distributionId} --output json`)
@@ -62,6 +77,10 @@ for (const assoc of distConfig.DefaultCacheBehavior.LambdaFunctionAssociations?.
 
 writeFileSync('/tmp/cf-update.json', JSON.stringify(distConfig))
 run(`aws cloudfront update-distribution --id ${aws.distributionId} --distribution-config file:///tmp/cf-update.json --if-match ${etag} --no-cli-pager > /dev/null`)
+
+// Clear S3 HTML pages (keep hashed assets) so Lambda@Edge re-renders with new templates
+step('Clearing S3 HTML pages')
+run(`aws s3 rm s3://${aws.bucket}/ --recursive --exclude "assets/*" --quiet`)
 
 // Wait + invalidate
 step('Waiting for CloudFront propagation (~3-5 min)')

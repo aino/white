@@ -57,6 +57,21 @@ export class WhiteIsrStack extends cdk.Stack {
     // Grant Lambda read/write access to S3
     bucket.grantReadWrite(edgeFunction)
 
+    // Render Lambda — pre-renders pages to S3 on revalidation
+    const renderFunction = new lambda.Function(this, 'RenderHandler', {
+      runtime: lambda.Runtime.NODEJS_20_X,
+      handler: 'index.handler',
+      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/render-bundle')),
+      timeout: cdk.Duration.seconds(120),
+      memorySize: 512,
+      environment: {
+        BUCKET: bucket.bucketName,
+        DISTRIBUTION_ID: '', // set after distribution is created
+      },
+    })
+
+    bucket.grantReadWrite(renderFunction)
+
     // S3 origin with OAC
     const s3Origin = origins.S3BucketOrigin.withOriginAccessControl(bucket)
 
@@ -138,13 +153,24 @@ export class WhiteIsrStack extends cdk.Stack {
       },
     })
 
-    // Revalidation Lambda — invalidates CloudFront cache
+    // Wire render Lambda to CloudFront (now that distribution exists)
+    renderFunction.addEnvironment('DISTRIBUTION_ID', distribution.distributionId)
+    renderFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        actions: ['cloudfront:CreateInvalidation'],
+        resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
+      })
+    )
+
+    // Revalidation Lambda — pre-renders then invalidates, or purges all
     const revalidateFunction = new lambda.Function(this, 'RevalidateHandler', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
       code: lambda.Code.fromInline(`
 const { CloudFrontClient, CreateInvalidationCommand } = require("@aws-sdk/client-cloudfront");
+const { LambdaClient, InvokeCommand } = require("@aws-sdk/client-lambda");
 const cf = new CloudFrontClient({ region: "us-east-1" });
+const lambdaClient = new LambdaClient({ region: "us-east-1" });
 
 exports.handler = async (event) => {
   const body = JSON.parse(event.body || "{}");
@@ -152,19 +178,28 @@ exports.handler = async (event) => {
     return { statusCode: 401, body: JSON.stringify({ error: "Unauthorized" }) };
   }
 
-  const distributionId = process.env.DISTRIBUTION_ID;
   const paths = body.paths;
 
-  // Invalidate specific paths or everything
-  // Supports wildcards: /products/*, /*/products/hello-world, /*
-  const cfPaths = paths && paths.length > 0
-    ? paths.map(p => p.startsWith("/") ? p : "/" + p)
-    : ["/*"];
+  if (paths && paths.length > 0) {
+    // Specific paths — invoke render Lambda async (pre-render to S3, then invalidate CF)
+    await lambdaClient.send(new InvokeCommand({
+      FunctionName: process.env.RENDER_FUNCTION_NAME,
+      InvocationType: "Event",
+      Payload: JSON.stringify({ paths }),
+    }));
 
+    return {
+      statusCode: 202,
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ ok: true, mode: "pre-render", paths }),
+    };
+  }
+
+  // No specific paths — purge everything via direct CF invalidation
   const inv = await cf.send(new CreateInvalidationCommand({
-    DistributionId: distributionId,
+    DistributionId: process.env.DISTRIBUTION_ID,
     InvalidationBatch: {
-      Paths: { Quantity: cfPaths.length, Items: cfPaths },
+      Paths: { Quantity: 1, Items: ["/*"] },
       CallerReference: Date.now().toString(),
     },
   }));
@@ -172,13 +207,14 @@ exports.handler = async (event) => {
   return {
     statusCode: 200,
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ ok: true, invalidationId: inv.Invalidation.Id, paths: cfPaths }),
+    body: JSON.stringify({ ok: true, mode: "purge-all", invalidationId: inv.Invalidation.Id }),
   };
 };
       `),
       environment: {
         DISTRIBUTION_ID: distribution.distributionId,
         REVALIDATE_SECRET: revalidateSecret,
+        RENDER_FUNCTION_NAME: renderFunction.functionName,
       },
       timeout: cdk.Duration.seconds(10),
     })
@@ -189,6 +225,8 @@ exports.handler = async (event) => {
         resources: [`arn:aws:cloudfront::${this.account}:distribution/${distribution.distributionId}`],
       })
     )
+
+    renderFunction.grantInvoke(revalidateFunction)
 
     // API Gateway
     const api = new apigateway.LambdaRestApi(this, 'RevalidateApi', {

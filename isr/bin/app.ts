@@ -8,8 +8,8 @@ const __dirname = resolve(fileURLToPath(import.meta.url), '..')
 const configPath = resolve(__dirname, '../../isr.config.js')
 const config = (await import(configPath)).default
 
-if (!config.name || !config.vercelUrl || !config.domain) {
-  throw new Error('isr.config.js must have name, domain, and vercelUrl')
+if (!config.name || !config.vercelUrl) {
+  throw new Error('isr.config.js must have name and vercelUrl')
 }
 
 const app = new cdk.App()

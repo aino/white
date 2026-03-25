@@ -28,6 +28,27 @@ export async function handler(event: any) {
     return request
   }
 
+  // Try S3 first — page may have been pre-rendered by the render Lambda
+  const s3Key = s3KeyFromUri(uri)
+  try {
+    const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: s3Key }))
+    const body = await obj.Body!.transformToString()
+    return {
+      status: '200',
+      statusDescription: 'OK',
+      headers: {
+        'content-type': [{ value: 'text/html' }],
+        'cache-control': [{ value: 'public, max-age=0, s-maxage=31536000' }],
+      },
+      body,
+    }
+  } catch (err: any) {
+    if (err.name !== 'NoSuchKey') {
+      console.error('S3 GetObject failed:', err)
+    }
+  }
+
+  // Fallback: render on-demand (first-ever pages, or if pre-render was skipped)
   const path = uri.replace(/\/$/, '') || '/'
   const html = await renderPage(path)
 
