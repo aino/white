@@ -23,9 +23,23 @@ function s3KeyFromUri(uri: string): string {
 export async function handler(event: any) {
   const request = event.Records[0].cf.request
   const uri = request.uri
+  const start = Date.now()
 
   if (uri.startsWith('/assets/')) {
     return request
+  }
+
+  // Extract request metadata for logging
+  const headers = request.headers
+  const country = headers['cloudfront-viewer-country']?.[0]?.value || 'unknown'
+  const device = headers['cloudfront-is-mobile-viewer']?.[0]?.value === 'true' ? 'mobile'
+    : headers['cloudfront-is-tablet-viewer']?.[0]?.value === 'true' ? 'tablet' : 'desktop'
+
+  const log = (status: string, source: string) => {
+    console.log(JSON.stringify({
+      uri, status, source, country, device,
+      duration: Date.now() - start,
+    }))
   }
 
   // Try S3 first — page may have been pre-rendered by the render Lambda
@@ -33,6 +47,7 @@ export async function handler(event: any) {
   try {
     const obj = await s3.send(new GetObjectCommand({ Bucket: BUCKET, Key: s3Key }))
     const body = await obj.Body!.transformToString()
+    log('200', 's3')
     return {
       status: '200',
       statusDescription: 'OK',
@@ -54,6 +69,7 @@ export async function handler(event: any) {
 
   if (!html) {
     const notFoundHtml = await renderPage('/404')
+    log('404', 'render')
     return {
       status: '404',
       statusDescription: 'Not Found',
@@ -75,6 +91,7 @@ export async function handler(event: any) {
     console.error('Failed to save to S3:', err)
   }
 
+  log('200', 'render')
   return {
     status: '200',
     statusDescription: 'OK',
