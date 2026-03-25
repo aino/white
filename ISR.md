@@ -1,6 +1,15 @@
 # ISR — On-Demand Static Page Generation
 
-Pages are built on-demand by Lambda@Edge and cached in CloudFront. Content updates invalidate specific paths — pages rebuild on the next visit.
+## Why
+
+Traditional static sites rebuild every page on every deploy. At scale (thousands of products, hundreds of locales), this is slow and expensive. Vercel's ISR solves this but at significant cost — $200-5,000+/month for high-traffic e-commerce sites.
+
+White ISR gives you the same capability on infrastructure you own. Pages are built on-demand, cached globally, and invalidated individually. The AWS resources live in your account — you control the cost, the data, and the uptime.
+
+- **Fast** — pages served from CloudFront edge cache worldwide
+- **Cheap** — S3 + CloudFront costs pennies compared to serverless rendering on every request
+- **Simple** — one config file, one deploy command
+- **Yours** — no vendor lock-in, you own the infrastructure
 
 ## Architecture
 
@@ -14,7 +23,9 @@ yourdomain.com → CloudFront
                      Cache MISS → Lambda renders page, saves to S3, caches in CloudFront
 ```
 
-Vercel handles API routes, image optimization, preview deploys, and draft mode. AWS handles page serving at scale.
+**Production** traffic goes through CloudFront. AWS handles page serving at scale.
+
+**Vercel** handles API routes, image optimization, preview deploys, and draft mode. When ISR is enabled, all Vercel page requests are rendered dynamically — no static HTML is built. This means every preview deploy and draft session always shows live data.
 
 ## Setup
 
@@ -24,6 +35,16 @@ Vercel handles API routes, image optimization, preview deploys, and draft mode. 
 // src/config.js
 export const ISR = true
 ```
+
+When `true`:
+- Vercel builds assets only (no HTML) and renders all pages dynamically
+- Production pages are served from AWS (CloudFront + Lambda@Edge)
+- Draft mode and preview deploys use Vercel's dynamic rendering
+
+When `false`:
+- Vercel builds static HTML and serves it directly
+- No AWS infrastructure needed
+- Draft mode still works via the catch-all function
 
 ### 2. Create `isr.config.js`
 
@@ -168,20 +189,6 @@ With a JSON body like:
 
 Optional: set `CMS_WEBHOOK_SECRET` env var on Vercel and send `{ "secret": "xxx", ... }` from the CMS for authentication.
 
-## Costs
-
-Estimated for 1M potential pages, 100k monthly visitors:
-
-| Service | Cost |
-|---|---|
-| S3 storage (visited pages only) | ~$1-2/mo |
-| CloudFront transfer (100GB) | ~$8.50/mo |
-| Lambda@Edge (cache misses only) | ~$0.50/mo |
-| CloudFront invalidations | ~$5/mo |
-| **Total** | **~$15-20/mo** |
-
-Compare to Vercel ISR at scale: $200-5,000+/mo.
-
 ## Config reference
 
 ### `isr.config.js`
@@ -200,4 +207,4 @@ Compare to Vercel ISR at scale: $200-5,000+/mo.
 
 | Field | Description |
 |---|---|
-| `ISR` | `true` enables ISR mode (dynamic rendering on Vercel, Lambda@Edge on AWS). `false` builds static HTML |
+| `ISR` | `true` — Vercel renders dynamically, production on AWS. `false` — Vercel serves static HTML, no AWS needed |
