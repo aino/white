@@ -15,6 +15,11 @@
     ]
   },
   "routes": [
+    {
+      "src": "/((?!api/).*)",
+      "has": [{ "type": "cookie", "key": "__draft", "value": "true" }],
+      "dest": "/api/[[...path]]?path=$1"
+    },
     { "handle": "filesystem" },
     { "src": "/api/hello", "dest": "/api/hello" },
     { "src": "/api/revalidate", "dest": "/api/revalidate" },
