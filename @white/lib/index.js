@@ -14,7 +14,6 @@ import localizedHrefPlugin from './localizedHrefPlugin.js'
 import jsxToHtmlPlugin from './jsxToHtmlPlugin.js'
 import preloadImageMetadata from './preloadImageMetaData.js'
 import getDynamicRoutes from './getDynamicRoutes.js'
-import vercelConfig from './vercelConfig.js'
 import viteCompression from 'vite-plugin-compression'
 import { API_PORT } from './ports.js'
 
@@ -24,7 +23,6 @@ export const getPath = (name) =>
   name === 'home' ? `index.html` : `${name}/index.html`
 
 export default (async () => {
-  await vercelConfig()
   const { input, dynamicPaths } = await getDynamicRoutes()
   const imageMetadataCache = await preloadImageMetadata()
 

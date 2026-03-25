@@ -11,6 +11,9 @@ export default function jsxToHtmlPlugin() {
     // Remove load hook to let Vite handle JSX normally
 
     async generateBundle(options, bundle) {
+      // Skip HTML generation when building assets only (ISR mode)
+      if (process.env.WHITE_ASSETS_ONLY) return
+
       // Get dynamic paths for processing
       const { dynamicPaths } = await getDynamicRoutes()
 
@@ -81,7 +84,7 @@ export default function jsxToHtmlPlugin() {
                           html = await compileTemplate(
                             jsxPath,
                             { ...data, locale: locale },
-                            vite
+                            vite,
                           )
                         } catch (error) {
                           console.warn(`Failed to compile template ${jsxPath}:`, error.message)
@@ -171,7 +174,8 @@ export default function jsxToHtmlPlugin() {
                     let html = await compileTemplate(
                       jsxPath,
                       { ...data, locale: locale },
-                      vite
+                      vite,
+                      { locales: LOCALES }
                     )
 
                     // Replace @/ imports with actual asset paths and add CSS links

@@ -1,4 +1,4 @@
-export const globalData = async () => {
+export const globalData = async ({ locale } = {}) => {
   return {
     site: { name: 'White' },
     posts: [
@@ -12,6 +12,7 @@ export const routes = {
   '/': {
     data: async () => ({
       path: '',
+      timestamp: new Date().toISOString(),
     }),
   },
   '/about': {

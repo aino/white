@@ -425,7 +425,26 @@ export default async function cart(node, { on, state }) {
 
 The cart maintains its state as users navigate between pages.
 
+## Draft Mode
+
+Preview unpublished CMS content without affecting the live site. Works in both static and ISR modes.
+
+**Setup:** Set `DRAFT_SECRET` as a Vercel environment variable.
+
+**Enable:** CMS preview button opens the **Vercel URL** (not the production domain — draft mode is handled by Vercel, not CloudFront):
+```
+https://yoursite.vercel.app/api/draft?secret=YOUR_DRAFT_SECRET&slug=/about
+```
+
+This sets a cookie and redirects to the page. The page is rendered dynamically with `draft: true` passed to all `data()` functions — use this to fetch draft content from your CMS.
+
+**Disable:** Visit `/api/draft-disable` or close the browser (cookie is session-based, 1hr expiry).
+
+Draft responses include `X-Robots-Tag: noindex` to prevent search engines from indexing unpublished content.
+
 ## Deployment
+
+### Static (default)
 
 White works on any static hosting platform:
 
@@ -436,4 +455,13 @@ White works on any static hosting platform:
 
 ```bash
 npm run build  # Generates ./dist
+```
+
+### ISR (on-demand static generation)
+
+For large-scale sites (thousands of products, hundreds of locales), enable ISR to build pages on-demand and cache them globally via AWS CloudFront. See [ISR.md](ISR.md) for full setup.
+
+```js
+// src/config.js
+export const ISR = true
 ```
