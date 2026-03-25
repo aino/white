@@ -202,6 +202,47 @@ With a JSON body like:
 
 Optional: set `CMS_WEBHOOK_SECRET` env var on Vercel and send `{ "secret": "xxx", ... }` from the CMS for authentication.
 
+## Logs & Monitoring
+
+Lambda@Edge logs every page render as structured JSON to CloudWatch: `uri`, `status`, `source` (s3 or render), `country`, `device`, `ua`, `duration`.
+
+### Query logs
+
+```bash
+node scripts/logs.js errors              # Recent errors
+node scripts/logs.js renders             # Recent page renders
+node scripts/logs.js slow                # Slow renders (>1s)
+node scripts/logs.js 404s                # 404s by path
+node scripts/logs.js stats               # Render source breakdown (s3 vs render)
+node scripts/logs.js countries           # Requests by country
+node scripts/logs.js devices             # Mobile vs desktop vs tablet
+node scripts/logs.js --query "QUERY"     # Custom CloudWatch Insights query
+node scripts/logs.js --hours 48          # Look back 48 hours (default: 24)
+```
+
+### Custom queries
+
+The script accepts CloudWatch Logs Insights syntax:
+
+```bash
+# Mobile vs desktop in Sweden
+node scripts/logs.js --query "filter country = 'SE' | stats count(*) by device"
+
+# Slowest pages by average render time
+node scripts/logs.js --query "filter source = 'render' | stats avg(duration) as avg_ms by uri | sort avg_ms desc"
+
+# Crawler activity
+node scripts/logs.js --query "filter ua like /Googlebot/ | stats count(*) by uri | sort count(*) desc"
+```
+
+### CloudFront access logs
+
+Full traffic data (including cache hits) is logged to S3 with 90-day retention. This captures every request — not just Lambda invocations. Query with Athena for traffic analytics.
+
+### AI agent access
+
+The `scripts/logs.js` header contains `DATA_ACCESS` instructions describing the log schema and example queries. AI agents (like support chatbots) can use this script to answer questions like "are there recent errors?" or "what's the device breakdown this week?"
+
 ## Config reference
 
 ### `isr.config.js`
