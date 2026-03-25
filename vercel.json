@@ -16,7 +16,7 @@
   },
   "routes": [
     {
-      "src": "/((?!api/).*)",
+      "src": "/((?!api/|assets/).*)",
       "has": [{ "type": "cookie", "key": "__draft", "value": "true" }],
       "dest": "/api/[[...path]]?path=$1"
     },
