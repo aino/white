@@ -1,27 +1,35 @@
 # White
 
-Static site generator with **Persistent Component Architecture** - where components can optionally maintain their state across page transitions without any virtual DOM or state management library.
+A performance-first frontend platform for e-commerce.
 
-## Disclaimer
+White generates static HTML from JSX templates with on-demand page building at the edge. Designed for large-scale storefronts — thousands of products, hundreds of locales, sub-second page loads — at a fraction of the infrastructure cost of traditional frameworks.
 
-Don’t use this for production! It’s an Aino experiment in back-to-basics with modern DX.
+## Built for e-commerce scale
 
-## What's Unique
+- **200 locales, 5000 products** — pages built on-demand, not at build time
+- **2KB client JavaScript** — no framework runtime, no hydration, no virtual DOM
+- **$50/month hosting** — S3 + CloudFront instead of $5k/month on serverless platforms
+- **Sub-second page loads** — static HTML from CDN edge, interactive islands where needed
+- **You own the infrastructure** — AWS resources in your account, no vendor lock-in
+
+## How it works
+
+White separates what most frameworks combine:
+
+- **Static pages** (product, category, blog) are server-rendered JSX templates served as plain HTML. Zero JavaScript unless a component needs interactivity.
+- **Interactive components** (cart, search, size selector) mount as islands on the static page using vanilla JS or React — only where needed, only the JS required.
+- **Data** comes from any source (CMS, commerce API, database) via async functions. No framework-specific data layer.
+- **Caching** is handled by CloudFront. Content updates invalidate specific pages via webhook — the next visitor gets a fresh page, everyone else gets it from cache.
+
+## What’s unique
 
 - **Physical DOM node transfer** between pages (with event listeners intact)
-- **Zero virtual DOM overhead** - just 2KB of client JavaScript
+- **Zero virtual DOM overhead** — just 2KB of client JavaScript
 - **Server-side JSX** for familiar component syntax
 - **Opt-in persistence** via the `key` attribute
-- **Automatic component lifecycle** management
+- **Automatic component lifecycle** with event delegation and cleanup
 - **Smart prefetching** on hover
-
-## Why White?
-
-- **Reactive frameworks** add unnecessary bloat for content-focused websites
-- Most websites need **URLs, navigation, and lightweight HTML**, not global state management
-- **Native JavaScript and DOM APIs** are efficient and often overlooked
-- By **separating markup from scripts**, developers write cleaner, more focused code
-- White gives you **React-like components** with **multi-page app benefits**
+- **On-demand ISR** via AWS Lambda@Edge — pages built when visited, cached globally
 
 ## Get Started
 
