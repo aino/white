@@ -32,6 +32,8 @@ White renders static HTML from JSX templates. No framework runtime, no hydration
 
 Deploy as a static site to any hosting platform, or enable on-demand page generation at the edge for large-scale storefronts with hundreds of locales and thousands of products.
 
+Navigation is instant. White prefetches pages on hover and swaps only the content area — like a single-page app, but without a client-side router or framework runtime. Components with a `key` attribute physically transfer between pages with their state and event listeners intact. A cart icon keeps its count. A music player keeps playing. No re-rendering, no state serialization.
+
 White separates what most frameworks combine:
 
 - **Static pages** (product, category, blog) are server-rendered JSX templates served as plain HTML. Zero JavaScript unless a component needs interactivity.
