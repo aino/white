@@ -3,11 +3,10 @@ import vercel from '../../vercel.json'
 import { IMAGE_QUALITY } from '../../src/config'
 
 const imageSizes = vercel.images.sizes
-const quality = IMAGE_QUALITY
 
 function generateSrcSet(url) {
   return imageSizes
-    .map((size) => `${getImageSrc({ url, size, quality })} ${size}w`)
+    .map((size) => `${getImageSrc({ url, size, quality: IMAGE_QUALITY })} ${size}w`)
     .join(', ')
 }
 

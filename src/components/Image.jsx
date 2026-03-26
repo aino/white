@@ -20,7 +20,6 @@ export const getImageSrc = ({ url, size, quality }) => {
 import { IMAGE_QUALITY } from 'src/config'
 
 const imageSizes = vercel.images.sizes
-const defaultQuality = IMAGE_QUALITY
 
 export default function Image({
   url,
@@ -61,7 +60,7 @@ export default function Image({
     return <img src={url} alt={alt || ''} {...props} />
   }
 
-  const q = quality || defaultQuality
+  const q = quality || IMAGE_QUALITY
   let src = url
   let imageProps = {}
 
