@@ -7,15 +7,27 @@ jobs:
   deploy:
     runs-on: ubuntu-latest
     steps:
+      - name: Check AWS credentials
+        id: check
+        run: |
+          if [ -z "${{ secrets.AWS_ACCESS_KEY_ID }}" ]; then
+            echo "skip=true" >> $GITHUB_OUTPUT
+            echo "No AWS credentials configured — skipping deploy"
+          fi
+
       - uses: actions/checkout@v4
+        if: steps.check.outputs.skip != 'true'
 
       - uses: actions/setup-node@v4
+        if: steps.check.outputs.skip != 'true'
         with:
           node-version: 20
 
       - run: npm install
+        if: steps.check.outputs.skip != 'true'
 
       - name: Deploy
+        if: steps.check.outputs.skip != 'true'
         run: npm run deploy:isr
         env:
           AWS_ACCESS_KEY_ID: ${{ secrets.AWS_ACCESS_KEY_ID }}
