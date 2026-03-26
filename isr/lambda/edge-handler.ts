@@ -74,7 +74,10 @@ export async function handler(event: any) {
     return {
       status: '404',
       statusDescription: 'Not Found',
-      headers: { 'content-type': [{ value: 'text/html' }] },
+      headers: {
+        'content-type': [{ value: 'text/html' }],
+        'cache-control': [{ value: 'public, max-age=0, s-maxage=60' }],
+      },
       body: notFoundHtml ? injectAssets(notFoundHtml) : '<html><body><h1>404</h1></body></html>',
     }
   }
