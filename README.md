@@ -92,6 +92,33 @@ export default async function counter(node, { on, state }) {
 }
 ```
 
+### Passing data to components
+
+Use `data-*` attributes for simple values:
+
+```jsx
+<div data-component="counter" data-value={value} data-currency={currency}>
+```
+
+```js
+const { value, currency } = node.dataset
+```
+
+For larger data (product objects, cart items), use a `<script type="application/json">` tag inside the component:
+
+```jsx
+<div data-component="cart">
+  {items.map(item => <div>{item.title}</div>)}
+  <script type="application/json">{JSON.stringify(items)}</script>
+</div>
+```
+
+```js
+const items = JSON.parse(node.querySelector('script[type="application/json"]').textContent)
+```
+
+Both approaches are standard HTML — no framework API needed.
+
 ### Lifecycle Context
 
 Both component scripts and page scripts receive a **lifecycle context** as a second argument. The context provides helpers that automatically clean up when the component unmounts or the user navigates away:
