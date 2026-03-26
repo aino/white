@@ -1,14 +1,4 @@
-import { getImageSrc } from '../../src/components/Image'
-import vercel from '../../vercel.json'
-import { IMAGE_QUALITY } from '../../src/config'
-
-const imageSizes = vercel.images.sizes
-
-function generateSrcSet(url) {
-  return imageSizes
-    .map((size) => `${getImageSrc({ url, size, quality: IMAGE_QUALITY })} ${size}w`)
-    .join(', ')
-}
+import { generateSrcSet } from './image'
 
 export function renderPreloadLinks(preloads) {
   if (!preloads || preloads.length === 0) return ''
@@ -23,12 +13,11 @@ export function renderPreloadLinks(preloads) {
 
       switch (as) {
         case 'image': {
-          const srcset = generateSrcSet(href)
           const attrs = [
             `rel="preload"`,
             `as="image"`,
-            `imagesrcset="${srcset}"`,
-            sizes ? `imagesizes="${sizes}"` : `imagesizes="100vw"`,
+            `imagesrcset="${generateSrcSet(href)}"`,
+            `imagesizes="${sizes || '100vw'}"`,
           ]
           return `<link ${attrs.join(' ')}>`
         }

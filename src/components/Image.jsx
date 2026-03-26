@@ -1,25 +1,4 @@
-import vercel from '../../vercel.json'
-
-// Use Vercel image optimization only when deployed on Vercel
-// VERCEL env var is exposed via envPrefix in vite config
-const isVercel = !!import.meta.env.VERCEL
-
-export const getImageSrc = ({ url, size, quality }) => {
-  if (!url) {
-    console.warn('getImageSrc called with undefined url')
-    return url
-  }
-  const encodedUrl = encodeURIComponent(url)
-  if (isVercel) {
-    return `/_vercel/image?url=${encodedUrl}&w=${size}&q=${quality}`
-  } else {
-    return `/_sharp/?path=${encodedUrl}&w=${size}&q=${quality}`
-  }
-}
-
-import { IMAGE_QUALITY } from 'src/config'
-
-const imageSizes = vercel.images.sizes
+import { getImageSrc, generateSrcSet, imageSizes } from '@white/utils/image'
 
 export default function Image({
   url,
@@ -55,12 +34,11 @@ export default function Image({
     )
   }
 
-  // Data URIs and placeholders — no optimization
+  // Data URIs — no optimization
   if (url.startsWith('data:')) {
     return <img src={url} alt={alt || ''} {...props} />
   }
 
-  const q = quality || IMAGE_QUALITY
   let src = url
   let imageProps = {}
 
@@ -68,7 +46,7 @@ export default function Image({
     const size = imageSizes.reduce((prev, curr) =>
       Math.abs(curr - width) < Math.abs(prev - width) ? curr : prev
     )
-    src = getImageSrc({ url, size, quality: q })
+    src = getImageSrc({ url, size, quality })
     imageProps.width = width
     if (height) {
       imageProps.height = height
@@ -79,10 +57,6 @@ export default function Image({
     imageProps.sizes = sizes
   }
 
-  const srcSet = imageSizes
-    .map((size) => `${getImageSrc({ url, size, quality: q })} ${size}w`)
-    .join(', ')
-
   if (priority) {
     imageProps.loading = 'eager'
     imageProps.fetchpriority = 'high'
@@ -91,6 +65,12 @@ export default function Image({
   }
 
   return (
-    <img src={src} srcSet={srcSet} alt={alt || ''} {...imageProps} {...props} />
+    <img
+      src={src}
+      srcSet={generateSrcSet(url, quality)}
+      alt={alt || ''}
+      {...imageProps}
+      {...props}
+    />
   )
 }
