@@ -6,40 +6,31 @@ A performance-first frontend platform.
 
 Most people don’t care enough about performance. For those who do — keep reading.
 
-White rethinks frontend from first principles. Every design decision optimizes for the output that reaches the user — the markup, the assets, the data. No layers of abstraction between your content and the response. No caching strategies to compensate for slow rendering. No framework overhead to work around. Built for coding agents.
+White rethinks frontend from first principles. Every design decision optimizes for the output that reaches the user — the markup, the assets, the data. No abstractions between content and response. No caching to compensate for slow rendering. No framework overhead. Built for coding agents.
 
-The architecture is deliberately minimal. Simple enough for an AI agent to read, understand, and modify without documentation. Simple enough for a developer to hold the entire system in their head.
+The architecture is deliberately minimal — simple enough for an AI agent to read and modify without docs, simple enough for a developer to hold in their head.
 
-Reactive frameworks like React and Next.js were designed for interactive applications. E-commerce pages aren't interactive applications — they're documents with a few interactive elements.
+### The problem with reactive frameworks
 
-**The runtime tax.** React ships 40-100KB+ of JavaScript to every visitor to re-render what's already static HTML. A product page is 95% text and images. The framework runtime is pure overhead.
+React was designed for interactive applications. Most e-commerce pages are documents with a few interactive elements.
 
-**The hydration problem.** React needs to "hydrate" server-rendered HTML by re-attaching event listeners and reconciling state. This requires serializing all component data into the page as JSON. On a category page with 200 products, that's easily 2MB of embedded JSON — data that was already rendered as HTML but needs to be duplicated for React to work. This bloats page weight, slows time-to-interactive, and increases bandwidth costs at scale.
+- **Runtime tax** — 40-100KB+ JS shipped to re-render what’s already static HTML
+- **Hydration bloat** — all component data serialized as JSON in the page source. 200 products on a category page = 2MB of duplicated data
+- **Server components** — introduced to fix client-side bloat, but added new complexity (`’use client’`, serialization boundaries) for a result still slower than static HTML
+- **Streaming / Suspense** — patches for slow server rendering. A static page from CDN arrives complete — no skeletons needed
+- **Caching complexity** — Next.js has five caching mechanisms (`ISR`, `unstable_cache`, `revalidateTag`, `revalidatePath`, `cache()`). White has one: the page is static, a webhook invalidates it
+- **Cost at scale** — every cache miss boots React on a server. At 200 locales × thousands of products, this adds up fast
 
-**Server components solve a self-created problem.** Server-side React was introduced to reduce client-side JavaScript. But you only had too much client-side JavaScript because you used React for everything in the first place. The fix added a new mental model (server vs client components), new restrictions (`'use client'`, serialization boundaries), and new failure modes — for a net result that's still slower than serving a static HTML file.
-
-**Streaming and Suspense are patches on patches.** Streaming exists because server rendering is slow enough that you need to show something while waiting. Loading skeletons exist because hydration is slow enough that components aren't interactive yet. Each solution patches the previous one. A static page from a CDN doesn't need any of this — it arrives complete.
-
-**Caching complexity.** Next.js has five caching mechanisms: ISR, `unstable_cache`, `revalidateTag`, `revalidatePath`, `cache()` — each with its own behavior and gotchas. White has one: the page is static, a webhook invalidates it.
-
-**Cost at scale.** Serverless rendering means every cache miss boots a React app on a server. At 200 locales and thousands of products, this adds up fast. A Lambda that concatenates template strings is orders of magnitude cheaper than one that boots React, resolves server components, and streams a response.
-
-**React is great — where it's needed.** White doesn't replace React. It removes React from the 90% of pages that never needed it (product, category, blog, editorial), and lets you mount it as an island on the 10% that do (cart, checkout, account, real-time search).
+White doesn’t replace React. It removes React from the 90% of pages that never needed it, and lets you mount it as an island on the 10% that do (cart, checkout, account).
 
 ## How it works
 
-White renders static HTML from JSX templates. No framework runtime, no hydration, no virtual DOM. Pages load in milliseconds with 2KB of client JavaScript. Interactive components mount as islands — only where needed, only the JS required.
-
-Deploy as a static site to any hosting platform, or enable on-demand page generation at the edge for large-scale storefronts with hundreds of locales and thousands of products.
-
-Navigation is instant. White prefetches pages on hover and swaps only the content area — like a single-page app, but without a client-side router or framework runtime. Components with a `key` attribute physically transfer between pages with their state and event listeners intact. A cart icon keeps its count. A music player keeps playing. No re-rendering, no state serialization.
-
-White separates what most frameworks combine:
-
-- **Static pages** (product, category, blog) are server-rendered JSX templates served as plain HTML. Zero JavaScript unless a component needs interactivity.
-- **Interactive components** (cart, search, size selector) mount as islands on the static page using vanilla JS or React — only where needed, only the JS required.
-- **Data** comes from any source (CMS, commerce API, database) via async functions. No framework-specific data layer.
-- **Locales** are a first-class config — automatic URL prefixing, localized hrefs, multi-market support out of the box.
+- **Static HTML from JSX** — server-rendered templates, 2KB client JS, no virtual DOM
+- **SPA navigation** — prefetches on hover, swaps content area only. Components with `key` transfer between pages with state and listeners intact
+- **Interactive islands** — vanilla JS or React components mount where needed
+- **Any data source** — CMS, commerce API, database via async functions
+- **Multi-locale** — automatic URL prefixing, localized hrefs, multi-market out of the box
+- **Two deploy modes** — static site to any host, or on-demand ISR via AWS Lambda@Edge
 
 ## Get Started
 
