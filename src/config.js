@@ -12,3 +12,4 @@ export const LOCALES = [
 ]
 export const PORT = 4667
 export const ISR = false
+export const IMAGE_QUALITY = 90

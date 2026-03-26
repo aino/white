@@ -1,8 +1,9 @@
 import { getImageSrc } from '../../src/components/Image'
 import vercel from '../../vercel.json'
+import { IMAGE_QUALITY } from '../../src/config'
 
 const imageSizes = vercel.images.sizes
-const quality = vercel.images.quality || 90
+const quality = IMAGE_QUALITY || 90
 
 function generateSrcSet(url) {
   return imageSizes
