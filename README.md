@@ -134,7 +134,7 @@ src/pages/work/index.jsx         → /work/
 src/pages/work/[slug]/index.jsx  → /work/project-a/, /work/project-b/, ...
 ```
 
-Routes in `data.config.js` must mirror this directory structure — they provide data to the pages, not define the routes. A page can exist without a route entry (it just receives no data props), but a `[slug]` directory needs a matching route with a `slugs()` function so White knows which pages to generate at build time.
+Routes in `data.config.js` must mirror this directory structure — they provide data to the pages, not define the routes. A page can exist without a route entry (it just receives no data props). A `[slug]` directory needs a matching route — with a `slugs()` function for static builds, or just `data()` for ISR (pages render on-demand). If `data()` returns `null`, the page is a 404.
 
 ```
 ├── src/
@@ -351,7 +351,7 @@ export const routes = {
 }
 ```
 
-**Dynamic routes** use `[slug]` directories. They require a `slugs()` function that returns all valid slugs, and a `data()` function that also receives `slug`:
+**Dynamic routes** use `[slug]` directories. For static builds, `slugs()` returns all valid slugs. For ISR, `slugs()` is optional — pages render on-demand and `data()` returning `null` triggers a 404:
 
 ```javascript
 export const routes = {

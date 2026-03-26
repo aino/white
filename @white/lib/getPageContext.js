@@ -52,23 +52,20 @@ export async function getPageContext(url, globalDataCache = null) {
     
     // If we found a dynamic route definition
     if (page) {
+      // If slugs() is defined, validate the slug (required for static builds)
       if (page.slugs) {
-        // Dynamic route with slugs function - validate the slug
         const slugs = await page.slugs(globalDataCache)
         if (!slugs.includes(slug)) {
-          return null // Invalid slug
+          return null
         }
-        if (page?.data) {
-          Object.assign(
-            data,
-            await page.data({ slug, locale, globalData: globalDataCache })
-          )
-        }
-        return { key, slug, data }
-      } else {
-        // Dynamic route without slugs function - this is an error
-        throw new Error('Slugs are required for dynamic routes')
       }
+      // Fetch page data — if data() returns null, treat as 404
+      if (page.data) {
+        const result = await page.data({ slug, locale, globalData: globalDataCache })
+        if (result === null) return null
+        Object.assign(data, result)
+      }
+      return { key, slug, data }
     } else {
       // No dynamic route found, check if it's a static page
       const staticKey = `/${segments.concat(slug).join('/')}`
