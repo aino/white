@@ -3,7 +3,7 @@ import vercel from '../../vercel.json'
 import { IMAGE_QUALITY } from '../../src/config'
 
 const imageSizes = vercel.images.sizes
-const quality = IMAGE_QUALITY || 90
+const quality = IMAGE_QUALITY
 
 function generateSrcSet(url) {
   return imageSizes
