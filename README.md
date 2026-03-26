@@ -2,15 +2,11 @@
 
 A performance-first frontend platform.
 
-White renders static HTML from JSX templates. No framework runtime, no hydration, no virtual DOM. Pages load in milliseconds with 2KB of client JavaScript. Interactive components mount as islands — only where needed, only the JS required.
-
-Deploy as a static site to any hosting platform, or enable on-demand page generation at the edge for large-scale storefronts with hundreds of locales and thousands of products.
-
 ## Why
 
 Most people don’t care enough about performance. For those who do — keep reading.
 
-White rethinks frontend from first principles. Every design decision optimizes for the output that reaches the user — the markup, the assets, the data. No layers of abstraction between your content and the response. No caching strategies to compensate for slow rendering. No framework overhead to work around.
+White rethinks frontend from first principles. Every design decision optimizes for the output that reaches the user — the markup, the assets, the data. No layers of abstraction between your content and the response. No caching strategies to compensate for slow rendering. No framework overhead to work around. Built for coding agents.
 
 The architecture is deliberately minimal. Simple enough for an AI agent to read, understand, and modify without documentation. Simple enough for a developer to hold the entire system in their head.
 
@@ -31,6 +27,10 @@ Reactive frameworks like React and Next.js were designed for interactive applica
 **React is great — where it's needed.** White doesn't replace React. It removes React from the 90% of pages that never needed it (product, category, blog, editorial), and lets you mount it as an island on the 10% that do (cart, checkout, account, real-time search).
 
 ## How it works
+
+White renders static HTML from JSX templates. No framework runtime, no hydration, no virtual DOM. Pages load in milliseconds with 2KB of client JavaScript. Interactive components mount as islands — only where needed, only the JS required.
+
+Deploy as a static site to any hosting platform, or enable on-demand page generation at the edge for large-scale storefronts with hundreds of locales and thousands of products.
 
 White separates what most frameworks combine:
 
