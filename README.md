@@ -6,9 +6,9 @@ A performance-first frontend platform.
 
 Most people don’t care enough about performance. For those who do — keep reading.
 
-White rethinks frontend from first principles. Every design decision optimizes for the output that reaches the user — the markup, the assets, the data. No abstractions between content and response. No caching to compensate for slow rendering. No framework overhead. Built for coding agents.
+White rethinks frontend from first principles. Every design decision optimizes for the output that reaches the user — the markup, the assets, the data. No abstractions between content and response. No caching to compensate for slow rendering. No framework overhead. Built for coding agents first.
 
-The architecture is deliberately minimal — simple enough for an AI agent to read and modify without docs, simple enough for a developer to hold in their head.
+The architecture is deliberately minimal — simple enough for an agents to read and modify without docs, simple enough for a developer to hold in their head.
 
 ### The problem with reactive frameworks
 
