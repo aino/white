@@ -20,18 +20,20 @@ export default function dynamicFiles(dynamic) {
       this.tempFiles = []
 
       // 1. Generate dynamic files
-      for (const key of dynamic) {
-        const paths = key.replace(/^\//, '').split('/')
+      for (const entry of dynamic) {
+        const { expanded, pattern } = typeof entry === 'string'
+          ? { expanded: entry, pattern: entry }
+          : entry
+        const paths = expanded.replace(/^\//, '').split('/')
         const tempDir = resolve(__dirname, '../../', PAGES_DIR, ...paths)
         const tempFilePath = resolve(tempDir, 'index.html')
 
-        // Only look for .jsx templates
+        // Resolve the JSX template from the route pattern
         const templatePath = resolve(
           __dirname,
           '../../',
           PAGES_DIR,
-          ...paths.slice(0, -1),
-          '[slug]',
+          pattern.replace(/^\//, ''),
           'index.jsx'
         )
 

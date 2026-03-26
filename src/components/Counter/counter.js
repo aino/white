@@ -1,7 +1,13 @@
 import { CounterContent } from './index'
 
 export default async function counter(node, { on, listen, state }) {
-  const { value, pathname } = node.dataset
+  // const { value, pathname } = node.dataset
+
+  const { value, pathname } = JSON.parse(
+    node.querySelector('script[type="application/json"]').textContent
+  )
+
+  console.log(value, pathname)
 
   const dataState = state(
     {

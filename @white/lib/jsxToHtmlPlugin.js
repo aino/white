@@ -57,13 +57,15 @@ export default function jsxToHtmlPlugin() {
               if (routeKey === 'index') routeKey = ''
 
               // Check if this is a dynamic route template
-              const isDynamicTemplate = routeKey.includes('[slug]')
+              const isDynamicTemplate = routeKey.includes('[')
 
               if (isDynamicTemplate) {
                 // For dynamic templates, generate HTML for each dynamic path
-                for (const dynamicPath of dynamicPaths) {
+                for (const entry of dynamicPaths) {
+                  const dynamicPath = typeof entry === 'string' ? entry : entry.expanded
+                  const pattern = typeof entry === 'string' ? null : entry.pattern
                   // Check if this dynamic path uses this template
-                  const templatePattern = routeKey.replace('[slug]', '([^/]+)')
+                  const templatePattern = routeKey.replace(/\[\w+\]/g, '([^/]+)')
                   const regex = new RegExp(`^${templatePattern}$`)
                   const pathToTest = dynamicPath.replace(/^\//, '')
                   const matches = regex.test(pathToTest)

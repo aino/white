@@ -5,102 +5,96 @@ import { PAGES_DIR } from './index'
 import fs from 'fs'
 import { LOCALES } from '../../src/config.js'
 
-export async function getPageContext(url, globalDataCache = null) {
-  const { locales, globalData, routes } = config
+// Match URL segments against a route pattern like /products/[category]/[slug]
+// Returns { category: 'jeans', slug: 'slim-finn' } or null if no match
+function matchRoute(segments, routePattern) {
+  const routeSegments = routePattern.replace(/^\//, '').split('/').filter(Boolean)
+  if (segments.length !== routeSegments.length) return null
 
-  // Skip page context for API routes
+  const params = {}
+  for (let i = 0; i < routeSegments.length; i++) {
+    const match = routeSegments[i].match(/^\[(.+)\]$/)
+    if (match) {
+      params[match[1]] = segments[i]
+    } else if (routeSegments[i] !== segments[i]) {
+      return null
+    }
+  }
+  return params
+}
+
+export async function getPageContext(url, globalDataCache = null) {
+  const { globalData, routes } = config
+
   if (url.startsWith('/api/')) {
     return null
   }
 
-  // Remove leading/trailing slashes and normalize path
   const path = url.replace(/^\/|\/?\w+\.html$|\/$/g, '').trim()
-
-  // Split the path into segments
   const segments = path.split('/').filter(Boolean)
 
-  // Determine the locale from the first segment
-  let locale = LOCALES[0] // Default locale
+  let locale = LOCALES[0]
   if (LOCALES.includes(segments[0])) {
     locale = segments.shift()
   }
 
-  // Get global data
   if (!globalDataCache && globalData) {
     globalDataCache = await globalData({ locale })
   }
 
-  // Merge global data with locale and set render context
   const globals = globalDataCache || {}
   setGlobalData(globals)
 
-  // Find the matching page or route
-  let key = `/${segments.join('/')}`
-
-  let page = routes[key]
-  let data = {
-    ...globals,
-    locale,
-  }
-  let slug = null
-
-  // Handle dynamic routes
-  if (!page) {
-    slug = segments.pop()
-    key = `/${segments.concat('[slug]').join('/')}`
-    page = routes[key]
-    
-    // If we found a dynamic route definition
-    if (page) {
-      // If slugs() is defined, validate the slug (required for static builds)
-      if (page.slugs) {
-        const slugs = await page.slugs(globalDataCache)
-        if (!slugs.includes(slug)) {
-          return null
-        }
-      }
-      // Fetch page data — if data() returns null, treat as 404
-      if (page.data) {
-        const result = await page.data({ slug, locale, globalData: globalDataCache })
-        if (result === null) return null
-        Object.assign(data, result)
-      }
-      return { key, slug, data }
-    } else {
-      // No dynamic route found, check if it's a static page
-      const staticKey = `/${segments.concat(slug).join('/')}`
-      const staticPage = routes[staticKey]
-      
-      if (staticPage) {
-        // Found static route definition
-        if (staticPage?.data) {
-          Object.assign(
-            data,
-            await staticPage.data({ locale, globalData: globalDataCache })
-          )
-        }
-        return { key: staticKey, slug: null, data }
-      } else {
-        // No route definition, check if template file exists
-        const templatePath = resolve(
-          __dirname,
-          '../../',
-          PAGES_DIR,
-          segments.concat(slug).join('/'),
-          'index.jsx'
-        )
-        if (fs.existsSync(templatePath)) {
-          return { key: staticKey, slug: null, data }
-        }
-        return null
-      }
+  // Try exact match first
+  const exactKey = `/${segments.join('/')}`
+  const exactPage = routes[exactKey]
+  if (exactPage) {
+    let data = { ...globals, locale }
+    if (exactPage.data) {
+      const result = await exactPage.data({ locale, globalData: globals })
+      if (result === null) return null
+      Object.assign(data, result)
     }
+    return { key: exactKey, data }
   }
-  if (page?.data) {
-    Object.assign(
-      data,
-      await page.data({ locale, globalData: globalDataCache })
-    )
+
+  // Try dynamic route patterns
+  for (const [pattern, page] of Object.entries(routes)) {
+    if (!pattern.includes('[')) continue
+
+    const params = matchRoute(segments, pattern)
+    if (!params) continue
+
+    // If params() is defined, validate (for static builds)
+    if (page.params) {
+      const validParams = await page.params(globals)
+      const isValid = validParams.some((p) =>
+        Object.keys(params).every((k) => p[k] === params[k])
+      )
+      if (!isValid) continue
+    }
+
+    // Fetch page data
+    let data = { ...globals, locale, ...params }
+    if (page.data) {
+      const result = await page.data({ ...params, locale, globalData: globals })
+      if (result === null) return null
+      Object.assign(data, result)
+    }
+    return { key: pattern, data }
   }
-  return { key, slug, data }
+
+  // No route definition, check if template file exists
+  const templatePath = resolve(
+    __dirname,
+    '../../',
+    PAGES_DIR,
+    segments.join('/'),
+    'index.jsx'
+  )
+  if (fs.existsSync(templatePath)) {
+    return { key: exactKey, data: { ...globals, locale } }
+  }
+
+  return null
 }

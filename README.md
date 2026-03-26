@@ -158,10 +158,11 @@ The directory structure inside `src/pages/` defines the URL routes. Each `index.
 src/pages/index.jsx              → /
 src/pages/about/index.jsx        → /about/
 src/pages/work/index.jsx         → /work/
-src/pages/work/[slug]/index.jsx  → /work/project-a/, /work/project-b/, ...
+src/pages/work/[slug]/index.jsx              → /work/project-a/, /work/project-b/, ...
+src/pages/products/[category]/[slug]/index.jsx → /products/jeans/slim-finn/, ...
 ```
 
-Routes in `data.config.js` must mirror this directory structure — they provide data to the pages, not define the routes. A page can exist without a route entry (it just receives no data props). A `[slug]` directory needs a matching route — with a `slugs()` function for static builds, or just `data()` for ISR (pages render on-demand). If `data()` returns `null`, the page is a 404.
+Routes in `data.config.js` must mirror this directory structure — they provide data to the pages, not define the routes. A page can exist without a route entry (it just receives no data props). Dynamic directories (e.g. `[slug]`, `[category]/[slug]`) need a matching route — with a `params()` function for static builds, or just `data()` for ISR (pages render on-demand). If `data()` returns `null`, the page is a 404.
 
 ```
 ├── src/
@@ -378,12 +379,12 @@ export const routes = {
 }
 ```
 
-**Dynamic routes** use `[slug]` directories. For static builds, `slugs()` returns all valid slugs. For ISR, `slugs()` is optional — pages render on-demand and `data()` returning `null` triggers a 404:
+**Dynamic routes** use `[param]` directories and support nesting. For static builds, `params()` returns all valid param combinations. For ISR, `params()` is optional — pages render on-demand and `data()` returning `null` triggers a 404:
 
 ```javascript
 export const routes = {
   '/posts/[slug]': {
-    slugs: (globalData) => globalData.posts.map((p) => p.slug),
+    params: (globalData) => globalData.posts.map((p) => ({ slug: p.slug })),
     data: async ({ slug, locale, globalData }) => {
       const post = globalData.posts.find((p) => p.slug === slug)
       return {
@@ -393,6 +394,19 @@ export const routes = {
         path: `/posts/${slug}`,
       }
     },
+  },
+  '/products/[category]/[slug]': {
+    params: () => [
+      { category: 'jeans', slug: 'slim-finn' },
+      { category: 'shirts', slug: 'henry-shirt' },
+    ],
+    data: async ({ category, slug }) => ({
+      title: `${slug} — ${category}`,
+      product: { name: slug },
+      category,
+      slug,
+      path: `/products/${category}/${slug}`,
+    }),
   },
 }
 ```

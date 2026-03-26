@@ -1,74 +1,77 @@
 import { setGlobalData } from '../@white/utils/globalData.js'
 
+// Match URL segments against a route pattern like /products/[category]/[slug]
+// Returns { category: 'jeans', slug: 'slim-finn' } or null if no match
+function matchRoute(segments, routePattern) {
+  const routeSegments = routePattern.replace(/^\//, '').split('/').filter(Boolean)
+  if (segments.length !== routeSegments.length) return null
+
+  const params = {}
+  for (let i = 0; i < routeSegments.length; i++) {
+    const match = routeSegments[i].match(/^\[(.+)\]$/)
+    if (match) {
+      params[match[1]] = segments[i]
+    } else if (routeSegments[i] !== segments[i]) {
+      return null
+    }
+  }
+  return params
+}
+
 export async function getPageContext(url, { routes, globalData, locales, draft = false }) {
   if (url.startsWith('/api/')) {
     return null
   }
 
-  // Remove leading/trailing slashes and normalize path
   const path = url.replace(/^\/|\/?\w+\.html$|\/$/g, '').trim()
   const segments = path.split('/').filter(Boolean)
 
-  // Determine the locale from the first segment
   let locale = locales[0]
   if (locales.includes(segments[0])) {
     locale = segments.shift()
   }
 
-  // Get global data and set render context
   const globals = globalData ? await globalData({ locale, draft }) : {}
   setGlobalData(globals)
 
-  // Find the matching page or route
-  let key = `/${segments.join('/')}`
-  let page = routes[key]
-  let data = { ...globals, locale, draft }
-  let slug = null
-
-  // Handle dynamic routes
-  if (!page) {
-    slug = segments.pop()
-    key = `/${segments.concat('[slug]').join('/')}`
-    page = routes[key]
-
-    if (page) {
-      // If slugs() is defined, validate the slug (required for static builds)
-      if (page.slugs) {
-        const slugs = await page.slugs(globals)
-        if (!slugs.includes(slug)) {
-          return null
-        }
-      }
-      // Fetch page data — if data() returns null, treat as 404
-      if (page.data) {
-        const result = await page.data({ slug, locale, globalData: globals, draft })
-        if (result === null) return null
-        Object.assign(data, result)
-      }
-      return { key, slug, data }
-    } else {
-      // Check if it's a static page without [slug]
-      const staticKey = `/${segments.concat(slug).join('/')}`
-      const staticPage = routes[staticKey]
-
-      if (staticPage) {
-        if (staticPage.data) {
-          Object.assign(
-            data,
-            await staticPage.data({ locale, globalData: globals, draft })
-          )
-        }
-        return { key: staticKey, slug: null, data }
-      }
-      return null
+  // Try exact match first
+  const exactKey = `/${segments.join('/')}`
+  const exactPage = routes[exactKey]
+  if (exactPage) {
+    let data = { ...globals, locale, draft }
+    if (exactPage.data) {
+      const result = await exactPage.data({ locale, globalData: globals, draft })
+      if (result === null) return null
+      Object.assign(data, result)
     }
+    return { key: exactKey, data }
   }
 
-  if (page.data) {
-    Object.assign(
-      data,
-      await page.data({ locale, globalData: globals, draft })
-    )
+  // Try dynamic route patterns
+  for (const [pattern, page] of Object.entries(routes)) {
+    if (!pattern.includes('[')) continue
+
+    const params = matchRoute(segments, pattern)
+    if (!params) continue
+
+    // If params() is defined, validate (for static builds)
+    if (page.params) {
+      const validParams = await page.params(globals)
+      const isValid = validParams.some((p) =>
+        Object.keys(params).every((k) => p[k] === params[k])
+      )
+      if (!isValid) continue
+    }
+
+    // Fetch page data
+    let data = { ...globals, locale, draft, ...params }
+    if (page.data) {
+      const result = await page.data({ ...params, locale, globalData: globals, draft })
+      if (result === null) return null
+      Object.assign(data, result)
+    }
+    return { key: pattern, data }
   }
-  return { key, slug, data }
+
+  return null
 }

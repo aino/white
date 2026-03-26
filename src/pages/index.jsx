@@ -23,6 +23,9 @@ export default function Home({ locale, path, timestamp }) {
           <li>
             <a href="/about/getting-started">Getting Started (dynamic slug)</a>
           </li>
+          <li>
+            <a href="/products">Products (nested dynamic slugs)</a>
+          </li>
         </ul>
       </nav>
     </Layout>

@@ -19,6 +19,9 @@ export default function Counter({ value, pathname }) {
       data-pathname={pathname}
     >
       <CounterContent value={value} pathname={pathname} />
+      <script type="application/json">
+        {JSON.stringify({ value, pathname })}
+      </script>
     </div>
   )
 }

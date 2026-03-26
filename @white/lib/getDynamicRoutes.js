@@ -4,14 +4,14 @@ import { globSync } from 'glob'
 import { routes, globalData } from '../../src/data.config.js'
 import { LOCALES } from '../../src/config.js'
 
-const rSlug = /\[slug\]/
+const rParam = /\[(\w+)\]/g
 
 export default async function getDynamicRoutes() {
   const dynamicPaths = []
-  const slugPromises = []
+  const paramPromises = []
   const input = globSync([
     resolve(__dirname, '../../', PAGES_DIR, '**/*.jsx'),
-  ]).filter((path) => !path.includes('[slug]'))
+  ]).filter((path) => !path.includes('['))
 
   // Add @white/white.js as an entry point
   input.push(resolve(__dirname, '../white.js'))
@@ -20,31 +20,30 @@ export default async function getDynamicRoutes() {
   const globalDataCache = globalData ? await globalData() : null
 
   for (const [path, page] of Object.entries(routes)) {
-    if (rSlug.test(path) && page.slugs) {
-      // Add the template JSX file to the input so it gets processed
-      const templateFile = resolve(
-        __dirname,
-        '../../',
-        PAGES_DIR,
-        `${path.replace(/^\//, '')}/index.jsx`
-      )
-      if (!input.includes(templateFile)) {
-        input.push(templateFile)
-      }
+    if (!path.includes('[') || !page.params) continue
 
-      const makeSlugs = async () => {
-        const slugs = await page.slugs(globalDataCache)
-        for (const slug of slugs) {
-          const key = path.replace(rSlug, slug)
-          dynamicPaths.push(key)
-        }
-      }
-      slugPromises.push(makeSlugs())
+    // Add the template JSX file to the input so it gets processed
+    const templateFile = resolve(
+      __dirname,
+      '../../',
+      PAGES_DIR,
+      `${path.replace(/^\//, '')}/index.jsx`
+    )
+    if (!input.includes(templateFile)) {
+      input.push(templateFile)
     }
-  }
-  // input.concat(localized)
 
-  await Promise.all(slugPromises)
+    const expandParams = async () => {
+      const paramSets = await page.params(globalDataCache)
+      for (const params of paramSets) {
+        const key = path.replace(rParam, (_, name) => params[name])
+        dynamicPaths.push({ expanded: key, pattern: path })
+      }
+    }
+    paramPromises.push(expandParams())
+  }
+
+  await Promise.all(paramPromises)
   const localized = []
   const root = resolve(__dirname, '../../', PAGES_DIR)
   for (const locale of LOCALES.slice(1)) {
