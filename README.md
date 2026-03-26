@@ -12,7 +12,7 @@ The architecture is deliberately minimal — simple enough for an AI agent to re
 
 ### The problem with reactive frameworks
 
-Reactive frameworks were designed around how humans think about UI — components, state, re-rendering. This developer-centric model comes with performance trade-offs that compound at scale. Most e-commerce pages are documents with a few interactive elements, not interactive applications.
+Reactive frameworks optimize for developer ergonomics, not output performance. The trade-offs compound at scale.
 
 - **Runtime tax** — 40-100KB+ JS shipped to re-render what’s already static HTML
 - **Hydration bloat** — all component data serialized as JSON in the page source. 200 products on a category page = 2MB of duplicated data
