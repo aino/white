@@ -18,7 +18,7 @@ export const getImageSrc = ({ url, size, quality }) => {
 }
 
 const imageSizes = vercel.images.sizes
-const defaultQuality = 90
+const defaultQuality = vercel.images.quality || 90
 
 export default function Image({
   url,
