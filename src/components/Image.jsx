@@ -8,30 +8,11 @@ export default function Image({
   alt,
   quality,
   priority,
-  type,
   ...props
 }) {
   if (!url) {
     console.warn('No URL provided for Image component')
     return null
-  }
-
-  // Video passthrough
-  const isVideo = type === 'video' || url.endsWith('.mp4')
-  if (isVideo) {
-    return (
-      <video
-        src={url}
-        width={width}
-        height={height}
-        autoplay
-        loop
-        muted
-        playsinline
-        crossorigin="anonymous"
-        {...props}
-      />
-    )
   }
 
   // Data URIs — no optimization
