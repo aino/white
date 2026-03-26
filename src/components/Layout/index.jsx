@@ -1,6 +1,7 @@
 import Header from '../Header'
 import Footer from '../Footer'
 import { getGlobalData } from '@white/utils/globalData'
+import { renderPreloadLinks } from '@white/utils/preload'
 
 export default function Layout({
   locale,
@@ -9,6 +10,7 @@ export default function Layout({
   title,
   description,
   image,
+  preload,
   path, // eslint-disable-line no-unused-vars
 }) {
   const { site } = getGlobalData()
@@ -22,6 +24,7 @@ export default function Layout({
       <head>
         <meta charset="UTF-8" />
         <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        {renderPreloadLinks(preload)}
         {description && (
           <>
             <meta name="description" content={description} />

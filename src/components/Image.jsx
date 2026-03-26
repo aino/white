@@ -17,25 +17,27 @@ export const getImageSrc = ({ url, size, quality }) => {
   }
 }
 
+const imageSizes = vercel.images.sizes
+const defaultQuality = 90
+
 export default function Image({
-  colWidth,
   url,
   width,
   height,
   sizes,
   alt,
+  quality,
+  priority,
   type,
   ...props
 }) {
-  colWidth = colWidth || 2
   if (!url) {
     console.warn('No URL provided for Image component')
     return null
   }
 
-  // Check if this is a video (by type prop or URL extension)
+  // Video passthrough
   const isVideo = type === 'video' || url.endsWith('.mp4')
-
   if (isVideo) {
     return (
       <video
@@ -52,28 +54,12 @@ export default function Image({
     )
   }
 
+  // Data URIs and placeholders — no optimization
   if (url.startsWith('data:')) {
     return <img src={url} alt={alt || ''} {...props} />
   }
 
-  if (url === 'placeholder') {
-    return (
-      <img
-        class="placeholder"
-        src="data:image/gif;base64,R0lGODlhAQABAAD/ACwAAAAAAQABAAACADs="
-        alt={alt || ''}
-        {...props}
-      />
-    )
-  }
-
-  if (colWidth && !sizes) {
-    const fraction = colWidth / 8
-    sizes = `(max-width: 768px) 75vw, ${fraction * 100}vw`
-  }
-
-  const imageSizes = vercel.images.sizes
-  const quality = 90
+  const q = quality || defaultQuality
   let src = url
   let imageProps = {}
 
@@ -81,7 +67,7 @@ export default function Image({
     const size = imageSizes.reduce((prev, curr) =>
       Math.abs(curr - width) < Math.abs(prev - width) ? curr : prev
     )
-    src = getImageSrc({ url, size, quality })
+    src = getImageSrc({ url, size, quality: q })
     imageProps.width = width
     if (height) {
       imageProps.height = height
@@ -93,8 +79,15 @@ export default function Image({
   }
 
   const srcSet = imageSizes
-    .map((size) => `${getImageSrc({ url, size, quality })} ${size}w`)
+    .map((size) => `${getImageSrc({ url, size, quality: q })} ${size}w`)
     .join(', ')
+
+  if (priority) {
+    imageProps.loading = 'eager'
+    imageProps.fetchpriority = 'high'
+  } else {
+    imageProps.loading = 'lazy'
+  }
 
   return (
     <img src={src} srcSet={srcSet} alt={alt || ''} {...imageProps} {...props} />
