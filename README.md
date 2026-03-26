@@ -1,12 +1,18 @@
 # White
 
-A performance-first frontend platform for e-commerce.
+A performance-first frontend platform.
 
 White renders static HTML from JSX templates. No framework runtime, no hydration, no virtual DOM. Pages load in milliseconds with 2KB of client JavaScript. Interactive components mount as islands — only where needed, only the JS required.
 
 Deploy as a static site to any hosting platform, or enable on-demand page generation at the edge for large-scale storefronts with hundreds of locales and thousands of products.
 
 ## Why
+
+Most people don’t care enough about performance. For those who do — keep reading.
+
+White rethinks frontend from first principles. Every design decision optimizes for the output that reaches the user — the markup, the assets, the data. No layers of abstraction between your content and the response. No caching strategies to compensate for slow rendering. No framework overhead to work around.
+
+The architecture is deliberately minimal. Simple enough for an AI agent to read, understand, and modify without documentation. Simple enough for a developer to hold the entire system in their head.
 
 Reactive frameworks like React and Next.js were designed for interactive applications. E-commerce pages aren't interactive applications — they're documents with a few interactive elements.
 
@@ -203,7 +209,11 @@ import { getGlobalData } from '@white/utils/globalData'
 
 export default function Header() {
   const { site, market } = getGlobalData()
-  return <header>{site.name} — {market.currency}</header>
+  return (
+    <header>
+      {site.name} — {market.currency}
+    </header>
+  )
 }
 ```
 
@@ -302,8 +312,8 @@ count.set((prev) => prev + 1)
 
 // assign — partial update for objects, supports function updaters per property
 const user = state({ name: 'Alice', score: 0 })
-user.assign({ score: (prev) => prev + 1 })  // name stays, score increments
-user.assign({ name: 'Bob' })                 // score stays, name replaced
+user.assign({ score: (prev) => prev + 1 }) // name stays, score increments
+user.assign({ name: 'Bob' }) // score stays, name replaced
 
 // Subscribe to changes
 const unsubscribe = count.subscribe((newVal, oldVal) => {
@@ -408,6 +418,7 @@ Preview unpublished CMS content without affecting the live site. Works in both s
 **Setup:** Set `DRAFT_SECRET` as a Vercel environment variable.
 
 **Enable:** CMS preview button opens the **Vercel URL** (not the production domain — draft mode is handled by Vercel, not CloudFront):
+
 ```
 https://yoursite.vercel.app/api/draft?secret=YOUR_DRAFT_SECRET&slug=/about
 ```
