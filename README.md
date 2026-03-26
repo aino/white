@@ -15,6 +15,7 @@ The architecture is deliberately minimal — simple enough for an AI agent to re
 React was designed for interactive applications. Most e-commerce pages are documents with a few interactive elements.
 
 - **Developer-first, not output-first** — reactive frameworks optimize for developer ergonomics. The trade-offs compound at scale
+- **Framework lock-in** — agencies pick favourites, trends shift every few years. JavaScript, CSS and HTML never go out of style
 - **Runtime tax** — 40-100KB+ JS shipped to re-render what’s already static HTML
 - **Hydration bloat** — all component data serialized as JSON in the page source. 200 products on a category page = 2MB of duplicated data
 - **Server components** — introduced to fix client-side bloat, but added new complexity (`’use client’`, serialization boundaries) for a result still slower than static HTML

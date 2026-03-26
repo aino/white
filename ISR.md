@@ -6,7 +6,7 @@ Traditional static sites rebuild every page on every deploy. At scale (thousands
 
 White ISR gives you the same capability on infrastructure you own. Pages are built on-demand, cached globally, and invalidated individually. The AWS resources live in your account — you control the cost, the data, and the uptime.
 
-- **Fast** — pages served from CloudFront edge cache worldwide
+- **Fast** — pages are served from CloudFront edge cache worldwide
 - **Cheap** — S3 + CloudFront costs pennies compared to serverless rendering on every request
 - **Simple** — one config file, one deploy command
 - **Yours** — no vendor lock-in, you own the infrastructure
