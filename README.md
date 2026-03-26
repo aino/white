@@ -12,8 +12,9 @@ The architecture is deliberately minimal — simple enough for an AI agent to re
 
 ### The problem with reactive frameworks
 
-Reactive frameworks optimize for developer ergonomics, not output performance. The trade-offs compound at scale.
+React was designed for interactive applications. Most e-commerce pages are documents with a few interactive elements.
 
+- **Developer-first, not output-first** — reactive frameworks optimize for developer ergonomics. The trade-offs compound at scale
 - **Runtime tax** — 40-100KB+ JS shipped to re-render what’s already static HTML
 - **Hydration bloat** — all component data serialized as JSON in the page source. 200 products on a category page = 2MB of duplicated data
 - **Server components** — introduced to fix client-side bloat, but added new complexity (`’use client’`, serialization boundaries) for a result still slower than static HTML
