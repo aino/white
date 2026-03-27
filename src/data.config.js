@@ -1,3 +1,6 @@
+// Environment variables: use process.env.X directly (not destructured).
+// Values from .env are injected at build time for Lambda compatibility.
+
 export const globalData = async ({ locale } = {}) => {
   return {
     site: { name: 'White' },

@@ -1,8 +1,8 @@
 import { S3Client, GetObjectCommand, PutObjectCommand } from '@aws-sdk/client-s3'
 
 const s3 = new S3Client({ region: 'us-east-1' })
-// Lambda@Edge doesn't support env vars — bucket name injected at bundle time
-const BUCKET = '__BUCKET_NAME__'
+// Lambda@Edge doesn't support runtime env vars — injected at bundle time via esbuild define
+const BUCKET = process.env.BUCKET!
 
 // Bundled at deploy time
 import { handler as renderPage } from './handler.js'

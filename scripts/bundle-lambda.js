@@ -1,6 +1,6 @@
 import { build } from 'esbuild'
 import { resolve } from 'path'
-import { cpSync, existsSync, mkdirSync, readFileSync, writeFileSync } from 'fs'
+import { cpSync, existsSync, mkdirSync, readFileSync } from 'fs'
 
 const ROOT = resolve(import.meta.dirname, '..')
 const OUT_DIR = resolve(ROOT, 'isr/lambda/bundle')
@@ -13,6 +13,38 @@ if (!bucketName) {
   console.error('Usage: node scripts/bundle-lambda.js <bucket-name>')
   process.exit(1)
 }
+
+// Parse .env for build-time injection into Lambda bundles.
+// Lambda@Edge doesn't support runtime env vars, so all process.env.X
+// references (e.g. in data.config.js) are replaced with literal values by esbuild.
+// Note: only process.env.X access works — destructuring (const { X } = process.env) does not.
+function parseDotenv(filePath) {
+  try {
+    const content = readFileSync(filePath, 'utf-8')
+    const vars = {}
+    for (const line of content.split('\n')) {
+      const trimmed = line.trim()
+      if (!trimmed || trimmed.startsWith('#')) continue
+      const eqIndex = trimmed.indexOf('=')
+      if (eqIndex === -1) continue
+      const key = trimmed.slice(0, eqIndex).trim()
+      let value = trimmed.slice(eqIndex + 1).trim()
+      if ((value.startsWith('"') && value.endsWith('"')) ||
+          (value.startsWith("'") && value.endsWith("'"))) {
+        value = value.slice(1, -1)
+      }
+      vars[key] = value
+    }
+    return vars
+  } catch {
+    return {}
+  }
+}
+
+const dotenvVars = parseDotenv(resolve(ROOT, '.env'))
+const envDefine = Object.fromEntries(
+  Object.entries(dotenvVars).map(([key, val]) => [`process.env.${key}`, JSON.stringify(val)])
+)
 
 // Verify templates are compiled
 if (!existsSync(resolve(TEMPLATES_DIR, 'registry.js'))) {
@@ -79,11 +111,11 @@ await build({
   outfile: resolve(OUT_DIR, 'index.js'),
   external: ['@aws-sdk/*'],
   plugins: [resolveWhitePlugin()],
+  define: {
+    ...envDefine,
+    'process.env.BUCKET': JSON.stringify(bucketName),
+  },
 })
-
-// Inject bucket name into the edge handler bundle (Lambda@Edge can't use env vars)
-const edgeBundle = readFileSync(resolve(OUT_DIR, 'index.js'), 'utf-8')
-writeFileSync(resolve(OUT_DIR, 'index.js'), edgeBundle.replace('__BUCKET_NAME__', bucketName))
 
 console.log(`Edge Lambda bundle written to ${OUT_DIR}/index.js (bucket: ${bucketName})`)
 
@@ -99,6 +131,7 @@ await build({
   outfile: resolve(RENDER_OUT_DIR, 'index.js'),
   external: ['@aws-sdk/*'],
   plugins: [resolveWhitePlugin()],
+  define: envDefine,
 })
 
 console.log(`Render Lambda bundle written to ${RENDER_OUT_DIR}/index.js`)

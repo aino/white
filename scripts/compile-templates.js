@@ -43,14 +43,22 @@ const aliasPlugin = {
       const filter = new RegExp(`^${prefix.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}`)
       build.onResolve({ filter }, (args) => {
         let resolved = args.path.replace(prefix, target)
-        // Resolve directory imports to index.jsx, or append .js extension
+        // Resolve directory imports to index.jsx/index.js, or append .jsx/.js
         try {
           if (statSync(resolved).isDirectory()) {
-            resolved = resolve(resolved, 'index.jsx')
+            if (existsSync(resolve(resolved, 'index.jsx'))) {
+              resolved = resolve(resolved, 'index.jsx')
+            } else if (existsSync(resolve(resolved, 'index.js'))) {
+              resolved = resolve(resolved, 'index.js')
+            }
           }
         } catch {
-          if (!resolved.match(/\.\w+$/) && existsSync(resolved + '.js')) {
-            resolved = resolved + '.js'
+          if (!resolved.match(/\.\w+$/)) {
+            if (existsSync(resolved + '.jsx')) {
+              resolved = resolved + '.jsx'
+            } else if (existsSync(resolved + '.js')) {
+              resolved = resolved + '.js'
+            }
           }
         }
         return { path: resolved }
