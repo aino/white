@@ -1,5 +1,6 @@
 import Header from '../Header'
 import Footer from '../Footer'
+import Counter from '../Counter'
 import { getGlobalData } from '@white/utils/globalData'
 import { renderPreloadLinks } from '@white/utils/preload'
 
@@ -11,7 +12,7 @@ export default function Layout({
   description,
   image,
   preload,
-  path, // eslint-disable-line no-unused-vars
+  path,
 }) {
   const { site } = getGlobalData()
   const siteName = site?.name || 'White'
@@ -72,7 +73,16 @@ export default function Layout({
       </head>
       <body class={bodyclass}>
         <Header />
-        <main id="app">{children}</main>
+        <main id="app">
+          <div class="content">{children}</div>
+          <aside class="sidebar">
+            <div class="sidebar-inner">
+              <h2>Counter</h2>
+              <p>Persists across pages — same DOM node, same state.</p>
+              <Counter value={0} pathname={path || '/'} />
+            </div>
+          </aside>
+        </main>
         <Footer />
       </body>
     </html>

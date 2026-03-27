@@ -21,7 +21,7 @@ const getTemplateContext = async (url) => {
   if (!pageContext) {
     return null
   }
-  const { key, slug, data } = pageContext
+  const { key, data } = pageContext
   const templatePath = resolve(
     __dirname,
     '../../',
@@ -29,17 +29,7 @@ const getTemplateContext = async (url) => {
     key.replace(/^\//, ''),
     'index.jsx'
   )
-  let jsxExists = false
-  if (slug && /\[slug\]/.test(key)) {
-    const templatePathWithSlug = templatePath.replace('[slug]', slug)
-    if (fs.existsSync(templatePathWithSlug)) {
-      jsxExists = true
-    }
-  }
-  if (!jsxExists && fs.existsSync(templatePath)) {
-    jsxExists = true
-  }
-  if (!jsxExists) {
+  if (!fs.existsSync(templatePath)) {
     return null
   }
   return { templatePath, data }
@@ -120,10 +110,7 @@ export default function virtualHtmlPlugin() {
                 const method = req.method
                 
                 if (apiModule[method]) {
-                  const response = await apiModule[method](req)
-                  res.statusCode = response.status || 200
-                  const body = await response.text()
-                  res.end(body)
+                  await apiModule[method](req, res)
                   return
                 }
               }

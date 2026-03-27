@@ -20,7 +20,7 @@ html {
   background: var(--white);
   font-family: system-ui, -apple-system, sans-serif;
   font-size: 16px;
-  line-height: 1.5;
+  line-height: 1.6;
   transition:
     background-color 0.15s ease-out,
     color 0.15s ease-out;
@@ -37,36 +37,83 @@ body {
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* Two-column layout */
+
 #app {
   min-height: 100dvh;
-  max-width: 48rem;
-  margin: 0 auto;
-  padding: 5rem 2rem 2rem;
+  padding: 6rem 4rem 3rem;
+  display: grid;
+  grid-template-columns: 1fr 240px;
+  gap: 4rem;
+  align-items: start;
 }
+
+.content {
+  max-width: 36rem;
+}
+
+.sidebar-inner {
+  position: sticky;
+  top: 6rem;
+}
+
+.sidebar h2 {
+  margin-bottom: 0.5rem;
+}
+
+.sidebar p {
+  font-size: 0.8125rem;
+  opacity: 0.45;
+  line-height: 1.5;
+}
+
+/* Typography */
 
 a {
   color: inherit;
 }
 
 h1 {
-  font-size: 2rem;
-  line-height: 1.2;
-  margin-bottom: 1rem;
+  font-size: 1.75rem;
+  line-height: 1.15;
+  margin-bottom: 0.75rem;
+  letter-spacing: -0.03em;
 }
 
 h2 {
-  font-size: 1.25rem;
-  line-height: 1.3;
-  margin-bottom: 0.5rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.75rem;
+  opacity: 0.4;
 }
 
 p {
   margin-bottom: 0.75rem;
 }
 
-p + p {
-  margin-top: 0;
+code {
+  font-size: 0.85em;
+  background: rgba(var(--black-rgb), 0.06);
+  padding: 0.15em 0.4em;
+  border-radius: 3px;
 }
+
+/* Image */
+
+.hero-image {
+  margin: 2rem 0;
+}
+
+.hero-image img {
+  width: 100%;
+  max-width: 480px;
+  height: auto;
+  display: block;
+}
+
+/* Utilities */
 
 .image,
 .video {
@@ -76,5 +123,30 @@ p + p {
   video {
     width: 100%;
     display: block;
+  }
+}
+
+.route {
+  font-size: 0.8125rem;
+  opacity: 0.35;
+  margin-top: 1.5rem;
+}
+
+.breadcrumb {
+  font-size: 0.8125rem;
+  opacity: 0.4;
+  margin-bottom: 1rem;
+}
+
+.breadcrumb a {
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+
+@media (max-width: 768px) {
+  #app {
+    grid-template-columns: 1fr;
+    padding: 5rem 1.5rem 2rem;
+    gap: 2rem;
   }
 }

@@ -65,8 +65,9 @@ export async function getPageContext(url, globalDataCache = null) {
     const params = matchRoute(segments, pattern)
     if (!params) continue
 
-    // If params() is defined, validate (for static builds)
-    if (page.params) {
+    // In production static builds, params() validates allowed combinations.
+    // In dev, skip validation — let data() handle 404s by returning null.
+    if (page.params && process.env.NODE_ENV === 'production') {
       const validParams = await page.params(globals)
       const isValid = validParams.some((p) =>
         Object.keys(params).every((k) => p[k] === params[k])

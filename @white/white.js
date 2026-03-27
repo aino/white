@@ -308,8 +308,10 @@ const white = () => {
   // find components that are outside #app and call them once
   for (const [name, fn] of Object.entries(components)) {
     const query = `[data-component="${name}"]`
-    if (document.querySelector(query) && !app.querySelector(query)) {
-      fn(app)
+    const node = document.querySelector(query)
+    if (node && !app.querySelector(query)) {
+      const { ctx, cleanup } = createContext(node)
+      fn(node, ctx)
     }
   }
 

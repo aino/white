@@ -1,5 +1,11 @@
 footer {
-  padding: 2rem;
-  opacity: 0.5;
-  font-size: 0.875rem;
+  padding: 0 4rem 2rem;
+  font-size: 0.75rem;
+  opacity: 0.25;
+}
+
+@media (max-width: 768px) {
+  footer {
+    padding: 0 1.5rem 2rem;
+  }
 }

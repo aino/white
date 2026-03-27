@@ -1,12 +1,14 @@
 export default function Header() {
   return (
-    <header data-component="header" key="header">
+    <header key="header">
       <nav>
         <a href="/" class="logo">
           White
         </a>
-        <div>
+        <div class="nav-links">
           <a href="/about">About</a>
+          <a href="/about/hello-world">Post</a>
+          <a href="/products/jeans/slim-finn">Product</a>
         </div>
       </nav>
     </header>

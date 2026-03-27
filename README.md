@@ -490,3 +490,7 @@ See [ISR.md](ISR.md) for full setup.
 // src/config.js
 export const ISR = true
 ```
+
+## License
+
+[Elastic License 2.0](LICENSE) — source available, not open source. You can read, learn from, and fork the code. You cannot offer it as a hosted service.

@@ -4,7 +4,10 @@ header {
   left: 0;
   width: 100%;
   z-index: 10;
-  padding: 1rem 2rem;
+  padding: 1.25rem 4rem;
+  background: rgba(var(--white-rgb), 0.85);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
   nav {
     display: flex;
     justify-content: space-between;
@@ -12,9 +15,25 @@ header {
   }
   .logo {
     font-weight: 700;
+    font-size: 0.9375rem;
     text-decoration: none;
+    letter-spacing: -0.03em;
+  }
+  .nav-links {
+    display: flex;
+    gap: 1.75rem;
   }
   a {
+    font-size: 0.8125rem;
     text-decoration: none;
+  }
+  a:hover {
+    opacity: 0.5;
+  }
+}
+
+@media (max-width: 768px) {
+  header {
+    padding: 1rem 1.5rem;
   }
 }
