@@ -86,9 +86,17 @@ export class WhiteIsrStack extends cdk.Stack {
     // S3 origin with OAC
     const s3Origin = origins.S3BucketOrigin.withOriginAccessControl(bucket)
 
-    // Vercel origin for API routes and images
+    // Vercel origin for API routes, images, and failover
     const vercelOrigin = new origins.HttpOrigin(vercelUrl, {
       protocolPolicy: cloudfront.OriginProtocolPolicy.HTTPS_ONLY,
+    })
+
+    // Origin failover group: S3 + Lambda@Edge primary, Vercel fallback
+    // If Lambda@Edge throws (502/503/504), CloudFront retries on Vercel
+    const failoverOrigin = new origins.OriginGroup({
+      primaryOrigin: s3Origin,
+      fallbackOrigin: vercelOrigin,
+      fallbackStatusCodes: [500, 502, 503, 504],
     })
 
     // Cache policies
@@ -127,9 +135,9 @@ export class WhiteIsrStack extends cdk.Stack {
       logBucket,
       logFilePrefix: 'cdn/',
 
-      // Default behavior: S3 pages with Lambda@Edge ISR
+      // Default behavior: S3 + Lambda@Edge, failover to Vercel on error
       defaultBehavior: {
-        origin: s3Origin,
+        origin: failoverOrigin,
         viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
         cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
         edgeLambdas: [
