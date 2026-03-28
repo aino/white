@@ -79,9 +79,20 @@ for (const assoc of distConfig.DefaultCacheBehavior.LambdaFunctionAssociations?.
 writeFileSync('/tmp/cf-update.json', JSON.stringify(distConfig))
 run(`aws cloudfront update-distribution --id ${aws.distributionId} --distribution-config file:///tmp/cf-update.json --if-match ${etag} --no-cli-pager > /dev/null`)
 
-// Clear S3 HTML pages (keep hashed assets + public files) so Lambda@Edge re-renders with new templates
-step('Clearing S3 HTML pages')
-run(`aws s3 rm s3://${aws.bucket}/ --recursive --exclude "assets/*" --exclude "images/*" --exclude "robots.txt" --quiet`)
+// Pre-render all routes to S3 (overwrites stale HTML with new templates)
+// Old HTML stays as fallback until overwritten — no deletion step
+step('Pre-rendering pages')
+if (renderFunctionArn && renderFunctionArn !== 'None') {
+  const { routes } = await import(resolve(ROOT, 'src/data.config.js'))
+  const paths = Object.keys(routes)
+  console.log(`  Routes: ${paths.join(', ')}`)
+  const payload = JSON.stringify({ paths })
+  run(`aws lambda invoke --function-name ${renderFunctionArn} --region us-east-1 --cli-binary-format raw-in-base64-out --payload '${payload}' /tmp/render-result.json --no-cli-pager > /dev/null`)
+  const result = JSON.parse(out('cat /tmp/render-result.json'))
+  console.log(`  Rendered ${result.rendered}/${result.total} pages`)
+} else {
+  console.warn('  Render Lambda not found — skipping pre-render')
+}
 
 // Wait + invalidate
 step('Waiting for CloudFront propagation (~3-5 min)')
