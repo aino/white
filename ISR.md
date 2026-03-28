@@ -80,7 +80,7 @@ export default {
 ### 4. Install CDK and bootstrap
 
 ```bash
-cd isr
+cd @white/isr
 npm install
 npx cdk bootstrap
 ```
@@ -88,7 +88,7 @@ npx cdk bootstrap
 ### 5. First deploy
 
 ```bash
-cd isr
+cd @white/isr
 REVALIDATE_SECRET=your-secret npx cdk deploy
 ```
 
@@ -125,11 +125,11 @@ This runs:
 1. Builds JS/CSS assets (Vite, no HTML)
 2. Compiles page templates (esbuild)
 3. Bundles Lambda handlers (edge + render) with templates
-4. Uploads assets to S3
+4. Uploads assets + public files to S3
 5. Updates Lambda@Edge and render Lambda function code
 6. Publishes new Lambda@Edge version
 7. Updates CloudFront to use new version
-8. Clears HTML pages from S3 (hashed assets are kept)
+8. Pre-renders all routes to S3 (old HTML stays as fallback)
 9. Waits for CloudFront propagation (~3-5 min)
 10. Invalidates CloudFront cache
 
@@ -155,7 +155,7 @@ For `paths: null` (purge everything), CloudFront is invalidated directly without
 
 ### After a deploy
 
-The deploy clears all HTML from S3 (hashed assets are kept). The first visitor to each page triggers an on-demand render via Lambda@Edge. After the first CMS webhook, the SWR behavior kicks in for all revalidated pages.
+The deploy pre-renders all routes to S3 with the new templates. Old HTML is kept as fallback — if a render fails (e.g. API down), the previous version is served instead of an error. Once pre-rendering completes, CloudFront is invalidated so edge locations pick up the new pages.
 
 ### Customizing `api/revalidate.js`
 
@@ -202,6 +202,38 @@ With a JSON body like:
 
 Optional: set `CMS_WEBHOOK_SECRET` env var on Vercel and send `{ "secret": "xxx", ... }` from the CMS for authentication.
 
+## Error Handling
+
+White ISR has three layers of resilience. Users never see errors for pages that were previously working.
+
+### 1. Stale-while-revalidate
+
+If a page render fails (API down, bad data, timeout), the edge handler serves the last successfully rendered version from S3. The stale page is cached for 60 seconds, then the next request retries the render. Errors are logged to CloudWatch.
+
+```
+Request → S3 cache miss → render fails → serve stale S3 version (200)
+                                        → log error
+                                        → retry on next request (after 60s)
+```
+
+### 2. Origin failover
+
+If Lambda@Edge itself crashes (unhandled exception, OOM, timeout beyond the try/catch), CloudFront automatically retries the request on Vercel. This covers catastrophic failures that bypass application-level error handling.
+
+### 3. Pre-render on deploy
+
+Deploys pre-render all routes to S3 before invalidating CloudFront. Old HTML stays as fallback — it is never deleted. If the pre-render fails for a page, the previous version remains in S3 and continues to be served.
+
+### What this means in practice
+
+| Scenario | What the user sees |
+|---|---|
+| CMS API temporarily down | Last good version of the page |
+| Bad data from API | Last good version of the page |
+| Lambda timeout/OOM | Vercel renders the page (origin failover) |
+| Bad deploy (render bug) | Last good version from previous deploy |
+| First-ever page (no stale version) | 500 error page (rare — only for brand new routes with broken data) |
+
 ## Logs & Monitoring
 
 Lambda@Edge logs every page render as structured JSON to CloudWatch: `uri`, `status`, `source` (s3 or render), `country`, `device`, `ua`, `duration`.
@@ -209,15 +241,15 @@ Lambda@Edge logs every page render as structured JSON to CloudWatch: `uri`, `sta
 ### Query logs
 
 ```bash
-node scripts/logs.js errors              # Recent errors
-node scripts/logs.js renders             # Recent page renders
-node scripts/logs.js slow                # Slow renders (>1s)
-node scripts/logs.js 404s                # 404s by path
-node scripts/logs.js stats               # Render source breakdown (s3 vs render)
-node scripts/logs.js countries           # Requests by country
-node scripts/logs.js devices             # Mobile vs desktop vs tablet
-node scripts/logs.js --query "QUERY"     # Custom CloudWatch Insights query
-node scripts/logs.js --hours 48          # Look back 48 hours (default: 24)
+node @white/deploy/logs.js errors              # Recent errors
+node @white/deploy/logs.js renders             # Recent page renders
+node @white/deploy/logs.js slow                # Slow renders (>1s)
+node @white/deploy/logs.js 404s                # 404s by path
+node @white/deploy/logs.js stats               # Render source breakdown (s3 vs render)
+node @white/deploy/logs.js countries           # Requests by country
+node @white/deploy/logs.js devices             # Mobile vs desktop vs tablet
+node @white/deploy/logs.js --query "QUERY"     # Custom CloudWatch Insights query
+node @white/deploy/logs.js --hours 48          # Look back 48 hours (default: 24)
 ```
 
 ### Custom queries
@@ -226,13 +258,13 @@ The script accepts CloudWatch Logs Insights syntax:
 
 ```bash
 # Mobile vs desktop in Sweden
-node scripts/logs.js --query "filter country = 'SE' | stats count(*) by device"
+node @white/deploy/logs.js --query "filter country = 'SE' | stats count(*) by device"
 
 # Slowest pages by average render time
-node scripts/logs.js --query "filter source = 'render' | stats avg(duration) as avg_ms by uri | sort avg_ms desc"
+node @white/deploy/logs.js --query "filter source = 'render' | stats avg(duration) as avg_ms by uri | sort avg_ms desc"
 
 # Crawler activity
-node scripts/logs.js --query "filter ua like /Googlebot/ | stats count(*) by uri | sort count(*) desc"
+node @white/deploy/logs.js --query "filter ua like /Googlebot/ | stats count(*) by uri | sort count(*) desc"
 ```
 
 ### CloudFront access logs
