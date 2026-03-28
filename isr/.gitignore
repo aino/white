@@ -1,8 +1,0 @@
-node_modules
-dist
-cdk.out
-lambda/bundle/*
-!lambda/bundle/.gitkeep
-lambda/render-bundle/*
-!lambda/render-bundle/.gitkeep
-lambda/_templates

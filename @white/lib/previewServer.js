@@ -17,15 +17,15 @@ const PORT = 4666
 const DIST_DIR = join(__dirname, '../../dist')
 const API_DIR = join(__dirname, '../../api')
 
-// Sharp image processing middleware
+// Sharp image processing middleware — serves /_vercel/image locally
+// so built HTML (which uses /_vercel/image URLs) works in preview mode
 const sharpMiddleware = async (req, res, next) => {
   const url = req.url
 
-  // Match the dynamic image resizing route
-  if (url.startsWith('/_sharp/')) {
+  if (url.startsWith('/_vercel/image')) {
     try {
       const query = new URLSearchParams(url.split('?')[1])
-      const encodedImagePath = query.get('path')
+      const encodedImagePath = query.get('url')
       const imagePath = decodeURIComponent(encodedImagePath)
       const width = parseInt(query.get('w'), 10)
       const quality = parseInt(query.get('q'), 10) || 80
@@ -139,34 +139,33 @@ app.use(async (req, res, next) => {
         const module = await import(join(API_DIR, file))
         
         app.all(route, async (req, res) => {
-          // Support both default export and named HTTP method exports
-          if (module.default) {
-            module.default(req, res)
-          } else {
-            // Check for named exports like GET, POST, etc.
-            const method = req.method.toUpperCase()
-            const methodHandler = module[method]
-            
-            if (methodHandler) {
-              try {
-                const result = await methodHandler(req, res)
-                
-                // Handle Vercel-style Response objects
-                if (result && typeof result.text === 'function') {
-                  const text = await result.text()
-                  res.setHeader('Content-Type', result.headers.get('content-type') || 'text/plain')
-                  res.status(result.status || 200).send(text)
-                } else if (result && result.body) {
-                  // Handle other Response-like objects
-                  res.status(result.status || 200).send(result.body)
-                }
-                // If handler doesn't return anything, assume it handled the response
-              } catch (error) {
-                res.status(500).json({ error: error.message })
-              }
-            } else {
-              res.status(405).json({ error: `Method ${method} not allowed` })
+          // Build a Web API Request from the Express request so Vercel-style
+          // handlers (new URL(req.url), req.headers.get(), req.json()) work.
+          const protocol = req.protocol || 'http'
+          const host = req.get('host') || 'localhost'
+          const webRequest = new Request(`${protocol}://${host}${req.originalUrl}`, {
+            method: req.method,
+            headers: req.headers,
+            body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+          })
+
+          const handler = module.default || module[req.method.toUpperCase()]
+
+          if (!handler) {
+            return res.status(405).json({ error: `Method ${req.method} not allowed` })
+          }
+
+          try {
+            const result = await handler(webRequest)
+
+            if (result && result instanceof Response) {
+              res.status(result.status)
+              result.headers.forEach((value, key) => res.setHeader(key, value))
+              const text = await result.text()
+              res.send(text)
             }
+          } catch (error) {
+            res.status(500).json({ error: error.message })
           }
         })
       })

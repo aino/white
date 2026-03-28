@@ -2,7 +2,7 @@ import { build } from 'esbuild'
 import { resolve } from 'path'
 import { writeFileSync, readFileSync, mkdirSync, readdirSync, statSync, existsSync } from 'fs'
 
-const ROOT = resolve(import.meta.dirname, '..')
+const ROOT = resolve(import.meta.dirname, '../..')
 const PAGES_DIR = resolve(ROOT, 'src/pages')
 const OUT_DIR = resolve(ROOT, 'dist/templates')
 

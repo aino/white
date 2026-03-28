@@ -1,4 +1,5 @@
 import Layout from 'src/components/Layout'
+import Image from 'src/components/Image'
 
 export default function Home({ locale, path }) {
   return (
@@ -9,8 +10,8 @@ export default function Home({ locale, path }) {
         navigation, and persistent interactive components.
       </p>
       <div class="hero-image">
-        <img
-          src="/images/1210.webp"
+        <Image
+          url="/images/1210.webp"
           alt="Turntable"
           width="1080"
           height="1080"

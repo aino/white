@@ -2,9 +2,9 @@ import { build } from 'esbuild'
 import { resolve } from 'path'
 import { cpSync, existsSync, mkdirSync, readFileSync } from 'fs'
 
-const ROOT = resolve(import.meta.dirname, '..')
-const OUT_DIR = resolve(ROOT, 'isr/lambda/bundle')
-const RENDER_OUT_DIR = resolve(ROOT, 'isr/lambda/render-bundle')
+const ROOT = resolve(import.meta.dirname, '../..')
+const OUT_DIR = resolve(ROOT, 'dist/isr/bundle')
+const RENDER_OUT_DIR = resolve(ROOT, 'dist/isr/render-bundle')
 const TEMPLATES_DIR = resolve(ROOT, 'dist/templates')
 
 // Bucket name passed as CLI arg: node scripts/bundle-lambda.js white-isr-client-name
@@ -58,16 +58,16 @@ if (!existsSync(resolve(TEMPLATES_DIR, 'assets.json'))) {
 }
 
 // Copy templates and assets.json into a location the handlers can import
-cpSync(TEMPLATES_DIR, resolve(ROOT, 'isr/lambda/_templates'), { recursive: true })
+cpSync(TEMPLATES_DIR, resolve(ROOT, 'dist/isr/_templates'), { recursive: true })
 
 // Shared esbuild plugin for resolving White handler imports
 function resolveWhitePlugin() {
   return {
     name: 'resolve-white',
     setup(build) {
-      // Redirect handler.js import to the project's lambda/handler.js
+      // Redirect handler.js import to @white/lambda/handler.js
       build.onResolve({ filter: /\.\/handler\.js$/ }, () => ({
-        path: resolve(ROOT, 'lambda/handler.js'),
+        path: resolve(ROOT, '@white/lambda/handler.js'),
       }))
 
       // Redirect assets.json to the compiled assets manifest
@@ -76,16 +76,13 @@ function resolveWhitePlugin() {
       }))
 
       // Resolve dist/templates imports from handler.js
-      build.onResolve({ filter: /\.\.\/dist\/templates/ }, (args) => ({
-        path: resolve(ROOT, args.path.replace('..', '.')),
+      build.onResolve({ filter: /dist\/templates/ }, (args) => ({
+        path: resolve(ROOT, 'dist/templates', args.path.split('dist/templates/')[1]),
       }))
 
       // Resolve src/ imports from handler.js and render-handler.ts
-      build.onResolve({ filter: /\.\.\/.*\/src\// }, (args) => ({
+      build.onResolve({ filter: /\.\.\/.*src\// }, (args) => ({
         path: resolve(ROOT, 'src', args.path.split('/src/')[1]),
-      }))
-      build.onResolve({ filter: /^\.\.\/src\// }, (args) => ({
-        path: resolve(ROOT, args.path.replace('..', '.')),
       }))
 
       // Ignore CSS/SCSS imports
@@ -103,7 +100,7 @@ function resolveWhitePlugin() {
 
 // Bundle the edge handler
 await build({
-  entryPoints: [resolve(ROOT, 'isr/lambda/edge-handler.ts')],
+  entryPoints: [resolve(ROOT, '@white/isr/lambda/edge-handler.ts')],
   bundle: true,
   format: 'cjs',
   platform: 'node',
@@ -123,7 +120,7 @@ console.log(`Edge Lambda bundle written to ${OUT_DIR}/index.js (bucket: ${bucket
 mkdirSync(RENDER_OUT_DIR, { recursive: true })
 
 await build({
-  entryPoints: [resolve(ROOT, 'isr/lambda/render-handler.ts')],
+  entryPoints: [resolve(ROOT, '@white/isr/lambda/render-handler.ts')],
   bundle: true,
   format: 'cjs',
   platform: 'node',

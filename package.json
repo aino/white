@@ -10,11 +10,11 @@
     "api": "nodemon --watch @white/lib/devServer.js --watch api/ @white/lib/devServer.js",
     "dev:api": "bun --bun run dev & bun --bun run api & wait",
     "build": "vite build",
-    "build:isr": "WHITE_ASSETS_ONLY=1 vite build && node scripts/compile-templates.js",
-    "vercel-build": "node scripts/vercel-build.js",
+    "build:isr": "WHITE_ASSETS_ONLY=1 vite build && node @white/build/compile-templates.js",
+    "vercel-build": "node @white/build/vercel-build.js",
     "start": "node @white/lib/previewServer.js",
     "lint": "eslint .",
-    "deploy:isr": "node scripts/deploy.js"
+    "deploy:isr": "node @white/deploy/deploy.js"
   },
   "devDependencies": {
     "eslint": "^9.16.0",

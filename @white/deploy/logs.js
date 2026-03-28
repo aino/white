@@ -62,7 +62,7 @@ import {
 import { readFileSync } from 'fs'
 import { resolve } from 'path'
 
-const ROOT = resolve(import.meta.dirname, '..')
+const ROOT = resolve(import.meta.dirname, '../..')
 const config = (await import(resolve(ROOT, 'isr.config.js'))).default
 
 // Lambda@Edge logs appear in whatever region served the request

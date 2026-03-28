@@ -60,7 +60,7 @@ export class WhiteIsrStack extends cdk.Stack {
     const edgeFunction = new cloudfront.experimental.EdgeFunction(this, 'IsrHandler', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/bundle')),
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../../dist/isr/bundle')),
       timeout: cdk.Duration.seconds(5),
       memorySize: 256,
     })
@@ -72,7 +72,7 @@ export class WhiteIsrStack extends cdk.Stack {
     const renderFunction = new lambda.Function(this, 'RenderHandler', {
       runtime: lambda.Runtime.NODEJS_20_X,
       handler: 'index.handler',
-      code: lambda.Code.fromAsset(path.join(__dirname, '../lambda/render-bundle')),
+      code: lambda.Code.fromAsset(path.join(__dirname, '../../../dist/isr/render-bundle')),
       timeout: cdk.Duration.seconds(120),
       memorySize: 512,
       environment: {
@@ -157,11 +157,20 @@ export class WhiteIsrStack extends cdk.Stack {
           allowedMethods: cloudfront.AllowedMethods.ALLOW_ALL,
         },
 
-        // Vercel image optimization
+        // Vercel image optimization — must forward query strings (url, w, q)
         '/_vercel/*': {
           origin: vercelOrigin,
           viewerProtocolPolicy: cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
-          cachePolicy: cloudfront.CachePolicy.CACHING_OPTIMIZED,
+          cachePolicy: new cloudfront.CachePolicy(this, 'VercelImageCache', {
+            cachePolicyName: `white-isr-${clientName}-vercel-image`,
+            defaultTtl: cdk.Duration.days(30),
+            maxTtl: cdk.Duration.days(365),
+            minTtl: cdk.Duration.days(1),
+            enableAcceptEncodingGzip: true,
+            enableAcceptEncodingBrotli: true,
+            queryStringBehavior: cloudfront.CacheQueryStringBehavior.all(),
+          }),
+          originRequestPolicy: cloudfront.OriginRequestPolicy.ALL_VIEWER_EXCEPT_HOST_HEADER,
         },
       },
     })

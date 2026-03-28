@@ -1,4 +1,4 @@
-import { setGlobalData } from '../@white/utils/globalData.js'
+import { setGlobalData } from '../utils/globalData.js'
 
 // Match URL segments against a route pattern like /products/[category]/[slug]
 // Returns { category: 'jeans', slug: 'slim-finn' } or null if no match

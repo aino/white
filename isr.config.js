@@ -1,7 +1,7 @@
 export default {
   name: 'white-test',
   // domain: 'example.com',
-  vercelUrl: 'white-git-feature-isr-aino.vercel.app',
+  vercelUrl: 'white-dun.vercel.app',
   aws: {
     bucket: 'white-isr-white-test',
     distributionId: 'E111NKUSRINWHB',

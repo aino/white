@@ -49,40 +49,45 @@ const apiDir = join(__dirname, '../../api')
     await Promise.all(
       files.filter((f) => f.isFile() && f.name.endsWith('.js')).map(async (f) => {
         const file = f.name
-        const route = `/api/${file.replace('.js', '')}` // Add /api prefix
+        // Convert Vercel route conventions to Express (path-to-regexp v8):
+        //   [[...path]] → {*path}  (optional catch-all)
+        //   [...path]   → *path   (catch-all)
+        //   [param]     → :param
+        const route = `/api/${file.replace('.js', '')}`
+          .replace(/\[\[\.\.\.(\w+)\]\]/g, '{*$1}')
+          .replace(/\[\.\.\.(\w+)\]/g, '*$1')
+          .replace(/\[(\w+)\]/g, ':$1')
         const module = await import(join(apiDir, file))
         app.all(route, async (req, res) => {
+          // Build a Web API Request from the Express request so Vercel-style
+          // handlers (new URL(req.url), req.headers.get(), req.json()) work.
+          const protocol = req.protocol || 'http'
+          const host = req.get('host') || 'localhost'
+          const webRequest = new Request(`${protocol}://${host}${req.originalUrl}`, {
+            method: req.method,
+            headers: req.headers,
+            body: ['GET', 'HEAD'].includes(req.method) ? undefined : JSON.stringify(req.body),
+          })
+
           // Support both default export and named HTTP method exports
-          if (module.default) {
-            module.default(req, res)
-          } else {
-            // Check for named exports like GET, POST, etc.
-            const method = req.method.toUpperCase()
-            const methodHandler = module[method]
+          const handler = module.default || module[req.method.toUpperCase()]
 
-            if (methodHandler) {
-              try {
-                const result = await methodHandler(req, res)
+          if (!handler) {
+            return res.status(405).json({ error: `Method ${req.method} not allowed` })
+          }
 
-                // Handle Vercel-style Response objects
-                if (result && typeof result.text === 'function') {
-                  const text = await result.text()
-                  res.setHeader(
-                    'Content-Type',
-                    result.headers.get('content-type') || 'text/plain'
-                  )
-                  res.status(result.status || 200).send(text)
-                } else if (result && result.body) {
-                  // Handle other Response-like objects
-                  res.status(result.status || 200).send(result.body)
-                }
-                // If handler doesn't return anything, assume it handled the response
-              } catch (error) {
-                res.status(500).json({ error: error.message })
-              }
-            } else {
-              res.status(405).json({ error: `Method ${method} not allowed` })
+          try {
+            const result = await handler(webRequest)
+
+            // Handle Web API Response objects
+            if (result && result instanceof Response) {
+              res.status(result.status)
+              result.headers.forEach((value, key) => res.setHeader(key, value))
+              const text = await result.text()
+              res.send(text)
             }
+          } catch (error) {
+            res.status(500).json({ error: error.message })
           }
         })
       })

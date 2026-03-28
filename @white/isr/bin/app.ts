@@ -5,7 +5,7 @@ import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = resolve(fileURLToPath(import.meta.url), '..')
-const configPath = resolve(__dirname, '../../isr.config.js')
+const configPath = resolve(__dirname, '../../../isr.config.js')
 const config = (await import(configPath)).default
 
 if (!config.name || !config.vercelUrl) {
