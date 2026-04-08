@@ -83,7 +83,7 @@ export default function Layout({
             </div>
           </aside>
         </main>
-        <Footer />
+        <Footer locale={locale} path={path} />
       </body>
     </html>
   )

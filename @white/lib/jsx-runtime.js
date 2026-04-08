@@ -1,3 +1,22 @@
+let _locale = ''
+let _locales = []
+
+export function setLocale(locale, locales) {
+  const defaultLocale = locales?.[0]
+  _locale = locale && locale !== defaultLocale ? `/${locale}` : ''
+  _locales = locales || []
+}
+
+function _localizeHref(href) {
+  if (typeof href !== 'string' || !href.startsWith('/') || href.startsWith('//') || href.startsWith('/assets')) {
+    return href
+  }
+  if (_locales.some(l => href.startsWith(`/${l}/`) || href === `/${l}`)) {
+    return href
+  }
+  return href === '/' ? _locale : `${_locale}${href}`
+}
+
 const VOID = new Set([
   'area',
   'base',
@@ -100,6 +119,11 @@ export function h(tag, props, ...children) {
 
     let value = v
     let key = k === 'className' ? 'class' : k
+
+    // Auto-localize <a href>
+    if (tag === 'a' && k === 'href' && _locale && !props['data-reload']) {
+      value = _localizeHref(value)
+    }
 
     // Special handling for style prop
     if (

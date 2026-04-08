@@ -25,10 +25,12 @@ export default function jsxToHtmlPlugin() {
           noDiscovery: true,
           include: [],
         },
-        esbuild: {
-          jsx: 'transform',
-          jsxFactory: 'h',
-          jsxFragment: 'Fragment',
+        oxc: {
+          jsx: {
+            runtime: 'classic',
+            pragma: 'h',
+            pragmaFrag: 'Fragment',
+          },
           jsxInject: `import { h, Fragment } from 'lib/jsx-runtime'`,
         },
       })

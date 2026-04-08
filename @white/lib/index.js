@@ -1,7 +1,7 @@
 import { resolve } from 'path'
 import fullReload from 'vite-plugin-full-reload'
 import { ViteMinifyPlugin } from 'vite-plugin-minify'
-import eslint from 'vite-plugin-eslint'
+import eslint from 'vite-plugin-eslint2'
 import dynamicFilesPlugin from './dynamicFilesPlugin.js'
 import virtualHtmlPlugin from './virtualHtmlPlugin.js'
 import dynamicImageResizePlugin from './dynamicImagesPlugin.js'
@@ -10,7 +10,6 @@ import virtualAutoCssPlugin from './virtualAutoCssPlugin.js'
 import virtualComponentsPlugin from './virtualComponentsPlugin.js'
 import jsxRuntimeInjector from './jsxRuntimeInjector.js'
 import customJsxTransform from './customJsxTransform.js'
-import localizedHrefPlugin from './localizedHrefPlugin.js'
 import jsxToHtmlPlugin from './jsxToHtmlPlugin.js'
 import preloadImageMetadata from './preloadImageMetaData.js'
 import getDynamicRoutes from './getDynamicRoutes.js'
@@ -50,7 +49,6 @@ export default (async () => {
       virtualHtmlPlugin(),
       dynamicImageResizePlugin(imageMetadataCache),
       dynamicFilesPlugin(dynamicPaths),
-      localizedHrefPlugin(),
       ViteMinifyPlugin({}),
     ],
     root: 'src/pages',
@@ -62,8 +60,13 @@ export default (async () => {
         'lib/jsx-runtime': resolve(__dirname, 'jsx-runtime.js'),
       },
     },
-    esbuild: {
+    oxc: {
       jsx: 'preserve',
+    },
+    optimizeDeps: {
+      rolldownOptions: {
+        jsx: 'preserve',
+      },
     },
     css: {
       transformer: 'lightningcss',
@@ -79,7 +82,7 @@ export default (async () => {
     publicDir: '../../src/public',
     envPrefix: ['VITE_', 'VERCEL'],
     build: {
-      target: 'es2018',
+      target: 'es2020',
       outDir: '../../dist',
       emptyOutDir: true,
       minify: 'terser', // Use terser for smaller bundles
@@ -94,15 +97,14 @@ export default (async () => {
           toplevel: true, // Mangle top-level variable names
         },
       },
-      rollupOptions: {
+      rolldownOptions: {
         input,
         output: {
           chunkFileNames: 'assets/[hash].js',
           entryFileNames: 'assets/[hash].js',
           assetFileNames: 'assets/[hash][extname]',
-          manualChunks: {
-            // Bundle all scripts together instead of splitting them
-            scripts: ['white/scripts'],
+          manualChunks(id) {
+            if (id.includes('white/scripts')) return 'scripts'
           },
         },
       },

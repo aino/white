@@ -1,10 +1,14 @@
 import { minify } from 'html-minifier-terser'
+import { LOCALES } from '../../src/config.js'
 
 export default async function compileTemplate(templatePath, data, viteServer) {
   // Render JSX component using the existing Vite server
   const jsxPath = templatePath.replace('.html', '.jsx')
 
   try {
+    const runtime = await viteServer.ssrLoadModule('lib/jsx-runtime')
+    runtime.setLocale(data.locale, LOCALES)
+
     const module = await viteServer.ssrLoadModule(jsxPath)
     const Component = module.default
 
@@ -13,6 +17,7 @@ export default async function compileTemplate(templatePath, data, viteServer) {
     }
 
     const html = '<!DOCTYPE html>' + Component(data)
+    runtime.setLocale(null, [])
 
     return await minify(html, {
       collapseWhitespace: true,

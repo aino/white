@@ -122,7 +122,7 @@ const prefetchLink = (link) => {
 
 const onLinkClick = (e) => {
   if (e.metaKey || e.ctrlKey) return
-  if (e.currentTarget.dataset.preventclick) {
+  if (e.currentTarget.dataset.preventclick || e.currentTarget.hasAttribute('data-reload')) {
     return
   }
   const { pathname, hostname, search, hash } = new URL(e.currentTarget.href)

@@ -30,11 +30,10 @@
     "sharp": "0.33.5",
     "terser": "^5.44.1",
     "vercel": "^39.1.2",
-    "vite": "^7.1.5",
+    "vite": "^8.0.7",
     "vite-plugin-compression": "^0.5.1",
-    "vite-plugin-eslint": "^1.8.1",
+    "vite-plugin-eslint2": "^5.1.0",
     "vite-plugin-full-reload": "^1.2.0",
-    "vite-plugin-handlebars": "^2.0.0",
     "vite-plugin-minify": "^2.0.1"
   },
   "dependencies": {
