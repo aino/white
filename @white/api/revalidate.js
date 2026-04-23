@@ -44,20 +44,23 @@ async function invalidateVercel(tags) {
 
   for (const tag of tags) {
     const response = await fetch(
-      `https://api.vercel.com/v1/projects/${projectId}/cache/invalidate?tag=${encodeURIComponent(tag)}`,
+      'https://api.vercel.com/v1/edge-cache/invalidate-by-tag',
       {
         method: 'POST',
         headers: {
           Authorization: `Bearer ${token}`,
           'Content-Type': 'application/json',
         },
+        body: JSON.stringify({ tag, projectId }),
       }
     )
 
+    const data = await response.json().catch(() => ({}))
     results.push({
       tag,
       status: response.status,
       ok: response.ok,
+      ...data,
     })
   }
 
