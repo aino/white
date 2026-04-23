@@ -40,7 +40,9 @@ async function invalidateVercel(tags) {
     return { error: 'Full purge not supported on Vercel ISR. Use specific tags.' }
   }
 
-  const params = new URLSearchParams({ projectIdOrName: projectId })
+  // Try project name first, fall back to ID
+  const projectName = process.env.VERCEL_PROJECT_NAME || 'white'
+  const params = new URLSearchParams({ projectIdOrName: projectName })
   if (teamId) params.append('teamId', teamId)
 
   const response = await fetch(
@@ -56,10 +58,38 @@ async function invalidateVercel(tags) {
   )
 
   const data = await response.json().catch(() => ({}))
+
+  // If project name fails, try with project ID
+  if (!response.ok && projectId !== projectName) {
+    const params2 = new URLSearchParams({ projectIdOrName: projectId })
+    if (teamId) params2.append('teamId', teamId)
+
+    const response2 = await fetch(
+      `https://api.vercel.com/v1/edge-cache/invalidate-by-tags?${params2}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ tags }),
+      }
+    )
+    const data2 = await response2.json().catch(() => ({}))
+    return {
+      status: response2.status,
+      ok: response2.ok,
+      tags,
+      tried: [projectName, projectId],
+      ...data2,
+    }
+  }
+
   return {
     status: response.status,
     ok: response.ok,
     tags,
+    tried: [projectName],
     ...data,
   }
 }
