@@ -30,41 +30,38 @@ async function resolveTags(payload) {
 async function invalidateVercel(tags) {
   const token = process.env.VERCEL_TOKEN
   const projectId = process.env.VERCEL_PROJECT_ID
+  const teamId = process.env.VERCEL_TEAM_ID
 
   if (!token || !projectId) {
     throw new Error('Missing VERCEL_TOKEN or VERCEL_PROJECT_ID')
   }
 
-  const results = []
-
   if (tags === null) {
-    // Purge all — not supported via tags, would need full redeploy
     return { error: 'Full purge not supported on Vercel ISR. Use specific tags.' }
   }
 
-  for (const tag of tags) {
-    const response = await fetch(
-      'https://api.vercel.com/v1/edge-cache/invalidate-by-tag',
-      {
-        method: 'POST',
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({ tag, projectId }),
-      }
-    )
+  const params = new URLSearchParams({ projectIdOrName: projectId })
+  if (teamId) params.append('teamId', teamId)
 
-    const data = await response.json().catch(() => ({}))
-    results.push({
-      tag,
-      status: response.status,
-      ok: response.ok,
-      ...data,
-    })
+  const response = await fetch(
+    `https://api.vercel.com/v1/edge-cache/invalidate-by-tags?${params}`,
+    {
+      method: 'POST',
+      headers: {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ tags }),
+    }
+  )
+
+  const data = await response.json().catch(() => ({}))
+  return {
+    status: response.status,
+    ok: response.ok,
+    tags,
+    ...data,
   }
-
-  return { invalidated: results }
 }
 
 async function invalidateAWS(tags) {
