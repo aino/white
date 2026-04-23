@@ -27,9 +27,16 @@ function injectAssets(html, assets) {
 function getCacheTags(context) {
   const tags = []
   if (context.locale) tags.push(`locale-${context.locale}`)
-  if (context.key) tags.push(`page-${context.key.replace(/\//g, '-').replace(/^-/, '')}`)
+  if (context.key) {
+    // Add path-based tag for direct path invalidation
+    const pathTag = context.key.replace(/\//g, '-').replace(/^-/, '')
+    tags.push(`path-${pathTag}`)
+  }
+  // Add both ID and slug for products (CMS might use either)
   if (context.data?.product?.id) tags.push(`product-${context.data.product.id}`)
+  if (context.data?.product?.slug) tags.push(`product-${context.data.product.slug}`)
   if (context.data?.category?.id) tags.push(`category-${context.data.category.id}`)
+  if (context.data?.category?.slug) tags.push(`category-${context.data.category.slug}`)
   return tags.join(',')
 }
 

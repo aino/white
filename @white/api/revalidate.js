@@ -8,18 +8,24 @@ import { ISR } from '../../src/config.js'
 // Customize this function per client.
 // Maps CMS webhook payloads to cache tags that need invalidation.
 async function resolveTags(payload) {
-  const { contentType, id } = payload
+  const { contentType, id, path } = payload
+
+  // If path is provided, use path-based invalidation (most reliable)
+  if (path) {
+    const pathTag = path.replace(/^\//, '').replace(/\//g, '-')
+    return [`path-${pathTag}`]
+  }
 
   switch (contentType) {
     case 'product':
-      // Product changed — invalidate the product + homepage
-      return [`product-${id}`, 'page-']
+      // Product changed — invalidate by slug/id (both are tagged)
+      return [`product-${id}`]
 
     case 'category':
       return [`category-${id}`]
 
     case 'page':
-      return [`page-${id}`]
+      return [`path-${id}`]
 
     default:
       // Unknown content type — return null to purge all
