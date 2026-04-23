@@ -11,5 +11,10 @@ export const LOCALES = [
   'fi-FI', // Finnish (Finland)
 ]
 export const PORT = 4667
-export const ISR = true
 export const IMAGE_QUALITY = 90
+
+// ISR Provider:
+// - 'vercel': On-demand rendering with Vercel edge caching + tag invalidation
+// - 'aws': CloudFront + Lambda@Edge + S3 (see ISR.md)
+// - false: Static build, all HTML generated at build time
+export const ISR = 'vercel'

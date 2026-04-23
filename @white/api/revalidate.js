@@ -1,31 +1,90 @@
-// CMS webhook translator — resolves content changes to page paths,
-// then calls the AWS revalidation API to purge those pages.
+// CMS webhook translator — resolves content changes to cache tags,
+// then invalidates via Vercel or AWS depending on ISR config.
 //
-// Customize resolvePaths() for each client's CMS data model.
+// Customize resolveTags() for each client's CMS data model.
 
-import config from '../../isr.config.js'
+import { ISR } from '../../src/config.js'
 
 // Customize this function per client.
-// Maps CMS webhook payloads to page paths that need revalidation.
-async function resolvePaths(payload) {
+// Maps CMS webhook payloads to cache tags that need invalidation.
+async function resolveTags(payload) {
   const { contentType, id } = payload
 
   switch (contentType) {
     case 'product':
-      // Product changed — invalidate the product page + any listing pages
-      return [
-        `/products/${id}`,
-        '/', // homepage might show featured products
-      ]
+      // Product changed — invalidate the product + homepage
+      return [`product-${id}`, 'page-']
+
+    case 'category':
+      return [`category-${id}`]
 
     case 'page':
-      // Generic page — invalidate by ID/slug
-      return [`/${id}`]
+      return [`page-${id}`]
 
     default:
-      // Unknown content type — purge everything
+      // Unknown content type — return null to purge all
       return null
   }
+}
+
+async function invalidateVercel(tags) {
+  const token = process.env.VERCEL_TOKEN
+  const projectId = process.env.VERCEL_PROJECT_ID
+
+  if (!token || !projectId) {
+    throw new Error('Missing VERCEL_TOKEN or VERCEL_PROJECT_ID')
+  }
+
+  const results = []
+
+  if (tags === null) {
+    // Purge all — not supported via tags, would need full redeploy
+    return { error: 'Full purge not supported on Vercel ISR. Use specific tags.' }
+  }
+
+  for (const tag of tags) {
+    const response = await fetch(
+      `https://api.vercel.com/v1/projects/${projectId}/cache/invalidate?tag=${encodeURIComponent(tag)}`,
+      {
+        method: 'POST',
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+      }
+    )
+
+    results.push({
+      tag,
+      status: response.status,
+      ok: response.ok,
+    })
+  }
+
+  return { invalidated: results }
+}
+
+async function invalidateAWS(tags) {
+  // Legacy AWS path-based invalidation
+  // Convert tags back to paths for AWS CloudFront
+  const config = (await import('../../isr.config.js')).default
+
+  const paths = tags?.map((tag) => {
+    if (tag.startsWith('product-')) return `/*/products/${tag.replace('product-', '')}`
+    if (tag.startsWith('page-')) return `/*/${tag.replace('page-', '')}`
+    return '/*'
+  }) || null
+
+  const response = await fetch(config.aws.revalidateUrl, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      secret: config.aws.revalidateSecret,
+      paths,
+    }),
+  })
+
+  return response.json()
 }
 
 export const POST = async (req) => {
@@ -40,22 +99,19 @@ export const POST = async (req) => {
     })
   }
 
-  const paths = await resolvePaths(payload)
+  const tags = await resolveTags(payload)
 
-  // Call AWS revalidation API
-  const response = await fetch(config.aws.revalidateUrl, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      secret: config.aws.revalidateSecret,
-      paths, // null = purge all, array = purge specific paths
-    }),
-  })
-
-  const result = await response.json()
+  let result
+  if (ISR === 'vercel') {
+    result = await invalidateVercel(tags)
+  } else if (ISR === 'aws') {
+    result = await invalidateAWS(tags)
+  } else {
+    result = { error: 'ISR not enabled' }
+  }
 
   return new Response(JSON.stringify(result), {
-    status: response.status,
+    status: result.error ? 400 : 200,
     headers: { 'Content-Type': 'application/json' },
   })
 }

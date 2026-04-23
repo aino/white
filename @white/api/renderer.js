@@ -1,6 +1,6 @@
 import { getPageContext } from '../lambda/getPageContext.js'
 import { globalData, routes } from '../../src/data.config.js'
-import { LOCALES } from '../../src/config.js'
+import { LOCALES, ISR } from '../../src/config.js'
 
 let templates = null
 let assets = null
@@ -22,6 +22,15 @@ function injectAssets(html, assets) {
     /<script type="module">import ['"]@white\/white\.js['"]<\/script>/,
     `${assets.css}\n${assets.js}`
   )
+}
+
+function getCacheTags(context) {
+  const tags = []
+  if (context.locale) tags.push(`locale-${context.locale}`)
+  if (context.key) tags.push(`page-${context.key.replace(/\//g, '-').replace(/^-/, '')}`)
+  if (context.data?.product?.id) tags.push(`product-${context.data.product.id}`)
+  if (context.data?.category?.id) tags.push(`category-${context.data.category.id}`)
+  return tags.join(',')
 }
 
 async function render(path, { draft = false } = {}) {
@@ -60,14 +69,23 @@ async function render(path, { draft = false } = {}) {
     return new Response('Template not found', { status: 500 })
   }
 
+  const headers = {
+    'Content-Type': 'text/html',
+  }
+
+  if (ISR === 'vercel' && !draft) {
+    // Cache for 1 hour, stale-while-revalidate for 1 day
+    headers['Cache-Control'] = 'public, s-maxage=3600, stale-while-revalidate=86400'
+    headers['Vercel-CDN-Cache-Control'] = 'public, s-maxage=3600, stale-while-revalidate=86400'
+    const tags = getCacheTags(context)
+    if (tags) headers['Vercel-Cache-Tag'] = tags
+  } else {
+    headers['Cache-Control'] = 'no-store'
+  }
+
   return new Response(
     injectAssets('<!DOCTYPE html>' + Template(context.data), assetManifest),
-    {
-      headers: {
-        'Content-Type': 'text/html',
-        'Cache-Control': 'no-store',
-      },
-    }
+    { headers }
   )
 }
 
