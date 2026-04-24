@@ -81,9 +81,9 @@ async function render(path, { draft = false } = {}) {
   }
 
   if ((ISR === 'vercel' || ISR === 'aws') && !draft) {
-    // Cache for 1 hour, stale-while-revalidate for 1 day
-    headers['Cache-Control'] = 'public, s-maxage=3600, stale-while-revalidate=86400'
-    headers['Vercel-CDN-Cache-Control'] = 'public, s-maxage=3600, stale-while-revalidate=86400'
+    // Cache indefinitely until explicitly invalidated via /api/revalidate
+    headers['Cache-Control'] = 'public, s-maxage=31536000'
+    headers['Vercel-CDN-Cache-Control'] = 'public, s-maxage=31536000'
     const tags = getCacheTags(context, path)
     if (tags) headers['Vercel-Cache-Tag'] = tags
   } else {

@@ -44,7 +44,7 @@ Request → Vercel Edge
   └── Cache MISS → render on-demand → cache with tags → serve
 ```
 
-Pages are cached for 1 hour (`s-maxage=3600`) with 24-hour stale-while-revalidate.
+Pages are cached indefinitely until explicitly invalidated. The invalidation API uses soft purge — visitors get the old page instantly while the new one renders in background.
 
 ### Invalidation
 
