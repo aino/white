@@ -3,14 +3,13 @@ import { resolve } from 'path'
 import { cpSync, existsSync, mkdirSync, readFileSync } from 'fs'
 
 const ROOT = resolve(import.meta.dirname, '../..')
-const OUT_DIR = resolve(ROOT, 'dist/isr/bundle')
-const RENDER_OUT_DIR = resolve(ROOT, 'dist/isr/render-bundle')
+const OUT_DIR = resolve(ROOT, 'dist/aws/bundle')
+const RENDER_OUT_DIR = resolve(ROOT, 'dist/aws/render-bundle')
 const TEMPLATES_DIR = resolve(ROOT, 'dist/templates')
 
-// Bucket name passed as CLI arg: node scripts/bundle-lambda.js white-isr-client-name
 const bucketName = process.argv[2]
 if (!bucketName) {
-  console.error('Usage: node scripts/bundle-lambda.js <bucket-name>')
+  console.error('Usage: node @white/aws/bundle.js <bucket-name>')
   process.exit(1)
 }
 
@@ -58,16 +57,16 @@ if (!existsSync(resolve(TEMPLATES_DIR, 'assets.json'))) {
 }
 
 // Copy templates and assets.json into a location the handlers can import
-cpSync(TEMPLATES_DIR, resolve(ROOT, 'dist/isr/_templates'), { recursive: true })
+cpSync(TEMPLATES_DIR, resolve(ROOT, 'dist/aws/_templates'), { recursive: true })
 
 // Shared esbuild plugin for resolving White handler imports
 function resolveWhitePlugin() {
   return {
     name: 'resolve-white',
     setup(build) {
-      // Redirect handler.js import to @white/lambda/handler.js
+      // Redirect handler.js import to @white/aws/lambda/handler.js
       build.onResolve({ filter: /\.\/handler\.js$/ }, () => ({
-        path: resolve(ROOT, '@white/lambda/handler.js'),
+        path: resolve(ROOT, '@white/aws/lambda/handler.js'),
       }))
 
       // Redirect assets.json to the compiled assets manifest
@@ -100,7 +99,7 @@ function resolveWhitePlugin() {
 
 // Bundle the edge handler
 await build({
-  entryPoints: [resolve(ROOT, '@white/isr/lambda/edge-handler.ts')],
+  entryPoints: [resolve(ROOT, '@white/aws/lambda/edge-handler.ts')],
   bundle: true,
   format: 'cjs',
   platform: 'node',
@@ -120,7 +119,7 @@ console.log(`Edge Lambda bundle written to ${OUT_DIR}/index.js (bucket: ${bucket
 mkdirSync(RENDER_OUT_DIR, { recursive: true })
 
 await build({
-  entryPoints: [resolve(ROOT, '@white/isr/lambda/render-handler.ts')],
+  entryPoints: [resolve(ROOT, '@white/aws/lambda/render-handler.ts')],
   bundle: true,
   format: 'cjs',
   platform: 'node',

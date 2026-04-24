@@ -1,5 +1,5 @@
-import { getPageContext } from './getPageContext.js'
-import { clearGlobalData } from '../utils/globalData.js'
+import { getPageContext } from '../../lib/getPageContext.js'
+import { clearGlobalData } from '../../utils/globalData.js'
 import templates from '../../dist/templates/registry.js'
 import { globalData, routes } from '../../src/data.config.js'
 import { LOCALES } from '../../src/config.js'

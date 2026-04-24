@@ -14,7 +14,7 @@
     "vercel-build": "node @white/build/vercel-build.js",
     "start": "node @white/lib/previewServer.js",
     "lint": "eslint .",
-    "deploy:isr": "node @white/deploy/deploy.js"
+    "deploy:aws": "node @white/aws/deploy.js"
   },
   "devDependencies": {
     "eslint": "^9.16.0",

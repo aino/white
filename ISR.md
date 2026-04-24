@@ -2,16 +2,79 @@
 
 ## Why
 
-Traditional static sites rebuild every page on every deploy. At scale (thousands of products, hundreds of locales), this is slow and expensive. Vercel's ISR solves this but at significant cost — $200-5,000+/month for high-traffic e-commerce sites.
+Traditional static sites rebuild every page on every deploy. At scale (thousands of products, hundreds of locales), this is slow and expensive.
 
-White ISR gives you the same capability on infrastructure you own. Pages are built on-demand, cached globally, and invalidated individually. The AWS resources live in your account — you control the cost, the data, and the uptime.
+ISR solves this: pages are rendered on first request, cached at the edge, and invalidated individually when content changes. No full rebuilds, no stale content.
 
-- **Fast** — pages are served from CloudFront edge cache worldwide
-- **Cheap** — S3 + CloudFront costs pennies compared to serverless rendering on every request
-- **Simple** — one config file, one deploy command
-- **Yours** — no vendor lock-in, you own the infrastructure
+White supports two ISR providers:
 
-## Architecture
+| | Vercel ISR | AWS ISR |
+|---|---|---|
+| **Best for** | Most projects | High-traffic, cost-sensitive |
+| **Setup** | Zero infrastructure | CDK deploy required |
+| **Cache** | Vercel edge network | CloudFront + S3 |
+| **Cost** | Included in Vercel plan | AWS pay-per-use |
+| **Control** | Managed | Self-hosted |
+
+---
+
+## Vercel ISR
+
+The simplest option. Vercel handles caching and invalidation.
+
+### Setup
+
+```js
+// src/config.js
+export const ISR = 'vercel'
+```
+
+Set environment variables in Vercel dashboard:
+- `VERCEL_TOKEN` — from [vercel.com/account/tokens](https://vercel.com/account/tokens)
+- `VERCEL_PROJECT_ID` — from Project Settings → General
+- `VERCEL_TEAM_ID` — from Team Settings (if on a team)
+
+Deploy normally with `vercel` or git push.
+
+### How it works
+
+```
+Request → Vercel Edge
+  ├── Cache HIT  → serve instantly
+  └── Cache MISS → render on-demand → cache with tags → serve
+```
+
+Pages are cached for 1 hour (`s-maxage=3600`) with 24-hour stale-while-revalidate.
+
+### Invalidation
+
+CMS webhook → `POST /api/revalidate` → Vercel purges matching tags.
+
+```bash
+curl -X POST https://your-site.vercel.app/api/revalidate \
+  -H "Content-Type: application/json" \
+  -d '{"contentType": "product", "id": "slim-finn"}'
+```
+
+### Local preview
+
+The preview server simulates Vercel's edge cache locally:
+
+```bash
+npm run build:isr && npm run start
+```
+
+- `X-Local-Cache: HIT/MISS` header shows cache status
+- `GET /api/revalidate` shows cache stats
+- `POST /api/revalidate` invalidates locally
+
+---
+
+## AWS ISR
+
+Self-hosted on your AWS account. More setup, but you control the infrastructure and costs.
+
+### Architecture
 
 ```
 yourdomain.com → CloudFront
@@ -20,34 +83,19 @@ yourdomain.com → CloudFront
 ├── /_vercel/*    → Vercel (image optimization)
 └── /*            → S3 + Lambda@Edge
                      Cache HIT  → serve instantly
-                     Cache MISS → Lambda@Edge reads pre-rendered page from S3 (fast)
-                                  or renders on-demand if not in S3 (first visit after deploy)
+                     Cache MISS → render on-demand → save to S3 → serve
 ```
 
-**Production** traffic goes through CloudFront. AWS handles page serving at scale.
+### Setup
 
-**Vercel** handles API routes, image optimization, preview deploys, and draft mode. When ISR is enabled, all Vercel page requests are rendered dynamically — no static HTML is built. This means every preview deploy and draft session always shows live data.
-
-## Setup
-
-### 1. Enable ISR
+#### 1. Enable AWS ISR
 
 ```js
 // src/config.js
-export const ISR = true
+export const ISR = 'aws'
 ```
 
-When `true`:
-- Vercel builds assets only (no HTML) and renders all pages dynamically
-- Production pages are served from AWS (CloudFront + Lambda@Edge)
-- Draft mode and preview deploys use Vercel's dynamic rendering
-
-When `false`:
-- Vercel builds static HTML and serves it directly
-- No AWS infrastructure needed
-- Draft mode still works via the catch-all function
-
-### 2. Create `isr.config.js`
+#### 2. Create `aws.config.js`
 
 ```js
 export default {
@@ -63,234 +111,133 @@ export default {
 }
 ```
 
-### 3. AWS account
-
-1. Create an AWS account at [aws.amazon.com](https://aws.amazon.com)
-2. Create an IAM user with `AdministratorAccess` (CLI access only, no console)
-3. Create an access key for the user
-4. Configure credentials:
-   ```bash
-   aws configure
-   # Access Key ID: <your key>
-   # Secret Access Key: <your secret>
-   # Region: us-east-1
-   # Output: json
-   ```
-
-### 4. Install CDK and bootstrap
+#### 3. AWS credentials
 
 ```bash
-cd @white/isr
-npm install
-npx cdk bootstrap
+aws configure
+# Access Key ID: <your key>
+# Secret Access Key: <your secret>
+# Region: us-east-1
+# Output: json
 ```
 
-### 5. First deploy
+#### 4. CDK bootstrap and deploy
 
 ```bash
-cd @white/isr
+cd @white/aws
+npm install
+npx cdk bootstrap
 REVALIDATE_SECRET=your-secret npx cdk deploy
 ```
 
-CDK outputs three values — copy them into `isr.config.js`:
+Copy the CDK outputs into `aws.config.js`.
 
-```
-white-isr-my-project.BucketName = white-isr-my-project
-white-isr-my-project.DistributionId = EXXXXXXXXXX
-white-isr-my-project.RevalidateUrl = https://xxx.execute-api.us-east-1.amazonaws.com/prod/revalidate
-```
-
-### 6. Set environment variables
+#### 5. Environment variables
 
 **Vercel** (Project Settings → Environment Variables):
 - `REVALIDATE_SECRET` — same secret used in CDK deploy
-- `DRAFT_SECRET` — see [Draft Mode](README.md#draft-mode) in README
 
-**GitHub Actions** (Settings → Secrets → Actions) for auto-deploy:
+**GitHub Actions** (for auto-deploy):
 - `AWS_ACCESS_KEY_ID`
 - `AWS_SECRET_ACCESS_KEY`
 - `REVALIDATE_SECRET`
 
-### 7. Point DNS
+#### 6. DNS
 
-Create a CNAME record pointing your domain to the CloudFront distribution domain (shown in CDK output as `DistributionDomain`).
+Create a CNAME pointing your domain to the CloudFront distribution domain.
 
-## Deploying
+### Deploying
 
 ```bash
-npm run deploy:isr
+npm run deploy:aws
 ```
 
-This runs:
-1. Builds JS/CSS assets (Vite, no HTML)
-2. Compiles page templates (esbuild)
-3. Bundles Lambda handlers (edge + render) with templates
-4. Uploads assets + public files to S3
-5. Updates Lambda@Edge and render Lambda function code
-6. Publishes new Lambda@Edge version
-7. Updates CloudFront to use new version
-8. Pre-renders all routes to S3 (old HTML stays as fallback)
-9. Waits for CloudFront propagation (~3-5 min)
-10. Invalidates CloudFront cache
+This builds assets, bundles Lambda handlers, uploads to S3, updates Lambda@Edge, pre-renders all routes, and invalidates CloudFront.
 
-### Auto-deploy via GitHub Actions
+### Revalidation
 
-Push to `main` triggers `.github/workflows/deploy.yml` which runs `npm run deploy:isr`. Requires AWS credentials and `REVALIDATE_SECRET` in GitHub Secrets.
+1. CMS webhook → `POST /api/revalidate`
+2. Render Lambda pre-renders affected pages to S3
+3. CloudFront invalidation
+4. Next request serves fresh page from S3
 
-## Revalidation (Stale-While-Revalidate)
+### Error handling
 
-When content changes in the CMS, pages are pre-rendered to S3 **before** CloudFront is invalidated. This means no visitor ever waits for a page to be built — they either get the old cached page (during CloudFront propagation) or the fresh pre-rendered page from S3.
+Three layers of resilience:
 
-### How it works
+1. **Stale-while-revalidate** — render fails → serve last good version from S3
+2. **Origin failover** — Lambda crashes → CloudFront retries on Vercel
+3. **Pre-render on deploy** — old HTML stays as fallback
 
-1. CMS sends webhook to Vercel `/api/revalidate`
-2. `resolvePaths()` maps the CMS event to page paths
-3. Vercel calls the AWS revalidation API with those paths
-4. The **render Lambda** pre-renders each page (all locale variants) and saves to S3
-5. After rendering completes, CloudFront is invalidated
-6. During propagation (~3-5 min): visitors get the old cached page
-7. After propagation: Lambda@Edge reads the pre-rendered page from S3 (instant)
+Users never see errors for pages that previously worked.
 
-For `paths: null` (purge everything), CloudFront is invalidated directly without pre-rendering — Lambda@Edge renders on the first hit, same as after a deploy.
+### Logs
 
-### After a deploy
+```bash
+node @white/aws/logs.js errors      # Recent errors
+node @white/aws/logs.js renders     # Recent renders
+node @white/aws/logs.js slow        # Slow renders (>1s)
+node @white/aws/logs.js stats       # Cache hit/miss breakdown
+node @white/aws/logs.js countries   # Requests by country
+```
 
-The deploy pre-renders all routes to S3 with the new templates. Old HTML is kept as fallback — if a render fails (e.g. API down), the previous version is served instead of an error. Once pre-rendering completes, CloudFront is invalidated so edge locations pick up the new pages.
+---
 
-### Customizing `api/revalidate.js`
+## Customizing invalidation
 
-Edit the `resolvePaths()` function for your CMS data model:
+Edit `@white/api/revalidate.js` to map your CMS events to cache tags:
 
 ```js
-async function resolvePaths(payload) {
+async function resolveTags(payload) {
   const { contentType, id } = payload
 
   switch (contentType) {
     case 'product':
-      return [`/*/products/${id}`, '/']
-
+      return [`product-${id}`]
     case 'category':
-      return [`/*/products/*`]
-
+      return [`category-${id}`]
     case 'page':
-      return [`/*/${id}`]
-
+      return [`path-${id}`]
     default:
-      return null  // null = purge everything
+      return null  // purge everything
   }
 }
 ```
 
-### Wildcard patterns
+### CMS webhook
 
-CloudFront supports `*` in invalidation paths:
-- `/*/products/slim-finn` — one product, all locales
-- `/*/products/*` — all products, all locales
-- `/*` — everything
-
-### CMS webhook setup
-
-Point your CMS webhook to:
+Point your CMS to:
 ```
 POST https://your-project.vercel.app/api/revalidate
 ```
 
-With a JSON body like:
+With body:
 ```json
 { "contentType": "product", "id": "slim-finn" }
 ```
 
-Optional: set `CMS_WEBHOOK_SECRET` env var on Vercel and send `{ "secret": "xxx", ... }` from the CMS for authentication.
+Optional: set `CMS_WEBHOOK_SECRET` env var for authentication.
 
-## Error Handling
-
-White ISR has three layers of resilience. Users never see errors for pages that were previously working.
-
-### 1. Stale-while-revalidate
-
-If a page render fails (API down, bad data, timeout), the edge handler serves the last successfully rendered version from S3. The stale page is cached for 60 seconds, then the next request retries the render. Errors are logged to CloudWatch.
-
-```
-Request → S3 cache miss → render fails → serve stale S3 version (200)
-                                        → log error
-                                        → retry on next request (after 60s)
-```
-
-### 2. Origin failover
-
-If Lambda@Edge itself crashes (unhandled exception, OOM, timeout beyond the try/catch), CloudFront automatically retries the request on Vercel. This covers catastrophic failures that bypass application-level error handling.
-
-### 3. Pre-render on deploy
-
-Deploys pre-render all routes to S3 before invalidating CloudFront. Old HTML stays as fallback — it is never deleted. If the pre-render fails for a page, the previous version remains in S3 and continues to be served.
-
-### What this means in practice
-
-| Scenario | What the user sees |
-|---|---|
-| CMS API temporarily down | Last good version of the page |
-| Bad data from API | Last good version of the page |
-| Lambda timeout/OOM | Vercel renders the page (origin failover) |
-| Bad deploy (render bug) | Last good version from previous deploy |
-| First-ever page (no stale version) | 500 error page (rare — only for brand new routes with broken data) |
-
-## Logs & Monitoring
-
-Lambda@Edge logs every page render as structured JSON to CloudWatch: `uri`, `status`, `source` (s3 or render), `country`, `device`, `ua`, `duration`.
-
-### Query logs
-
-```bash
-node @white/deploy/logs.js errors              # Recent errors
-node @white/deploy/logs.js renders             # Recent page renders
-node @white/deploy/logs.js slow                # Slow renders (>1s)
-node @white/deploy/logs.js 404s                # 404s by path
-node @white/deploy/logs.js stats               # Render source breakdown (s3 vs render)
-node @white/deploy/logs.js countries           # Requests by country
-node @white/deploy/logs.js devices             # Mobile vs desktop vs tablet
-node @white/deploy/logs.js --query "QUERY"     # Custom CloudWatch Insights query
-node @white/deploy/logs.js --hours 48          # Look back 48 hours (default: 24)
-```
-
-### Custom queries
-
-The script accepts CloudWatch Logs Insights syntax:
-
-```bash
-# Mobile vs desktop in Sweden
-node @white/deploy/logs.js --query "filter country = 'SE' | stats count(*) by device"
-
-# Slowest pages by average render time
-node @white/deploy/logs.js --query "filter source = 'render' | stats avg(duration) as avg_ms by uri | sort avg_ms desc"
-
-# Crawler activity
-node @white/deploy/logs.js --query "filter ua like /Googlebot/ | stats count(*) by uri | sort count(*) desc"
-```
-
-### CloudFront access logs
-
-Full traffic data (including cache hits) is logged to S3 with 90-day retention. This captures every request — not just Lambda invocations. Query with Athena for traffic analytics.
-
-### AI agent access
-
-The `scripts/logs.js` header contains `DATA_ACCESS` instructions describing the log schema and example queries. AI agents (like support chatbots) can use this script to answer questions like "are there recent errors?" or "what's the device breakdown this week?"
+---
 
 ## Config reference
 
-### `isr.config.js`
-
-| Field | Description |
-|---|---|
-| `name` | Project identifier. Used for AWS resource naming (`white-isr-{name}`) |
-| `domain` | Production domain (used for SSL certificate) |
-| `vercelUrl` | Vercel deployment URL (e.g. `project.vercel.app`). CloudFront proxies `/api/*` here |
-| `aws.bucket` | S3 bucket name (from CDK output) |
-| `aws.distributionId` | CloudFront distribution ID (from CDK output) |
-| `aws.revalidateUrl` | API Gateway URL for revalidation (from CDK output) |
-| `aws.revalidateSecret` | Shared secret for revalidation API. Use `process.env.REVALIDATE_SECRET` |
-
 ### `src/config.js`
 
+| `ISR` value | Behavior |
+|---|---|
+| `'vercel'` | Vercel edge caching + tag invalidation |
+| `'aws'` | CloudFront + S3 + Lambda@Edge |
+| `false` | Static build, all HTML generated at build time |
+
+### `aws.config.js` (AWS only)
+
 | Field | Description |
 |---|---|
-| `ISR` | `true` — Vercel renders dynamically, production on AWS. `false` — Vercel serves static HTML, no AWS needed |
+| `name` | Project identifier for AWS resource naming |
+| `domain` | Production domain (for SSL certificate) |
+| `vercelUrl` | Vercel deployment URL for API/image proxying |
+| `aws.bucket` | S3 bucket name (from CDK output) |
+| `aws.distributionId` | CloudFront distribution ID (from CDK output) |
+| `aws.revalidateUrl` | API Gateway URL (from CDK output) |
+| `aws.revalidateSecret` | Shared secret for revalidation API |

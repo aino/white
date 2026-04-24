@@ -4,6 +4,9 @@
 // Customize resolveTags() for each client's CMS data model.
 
 import { ISR } from '../../src/config.js'
+import * as localCache from '../lib/localCache.js'
+
+const isLocal = !process.env.VERCEL
 
 // Customize this function per client.
 // Maps CMS webhook payloads to cache tags that need invalidation.
@@ -100,10 +103,20 @@ async function invalidateVercel(tags) {
   }
 }
 
+function invalidateLocal(tags) {
+  if (tags === null) {
+    const count = localCache.invalidateAll()
+    return { invalidated: 'all', count }
+  }
+
+  const paths = localCache.invalidateByTags(tags)
+  return { invalidated: paths, tags }
+}
+
 async function invalidateAWS(tags) {
   // Legacy AWS path-based invalidation
   // Convert tags back to paths for AWS CloudFront
-  const config = (await import('../../isr.config.js')).default
+  const config = (await import('../../aws.config.js')).default
 
   const paths = tags?.map((tag) => {
     if (tag.startsWith('product-')) return `/*/products/${tag.replace('product-', '')}`
@@ -123,6 +136,19 @@ async function invalidateAWS(tags) {
   return response.json()
 }
 
+export const GET = async () => {
+  if (!isLocal) {
+    return new Response(JSON.stringify({ error: 'Stats only available locally' }), {
+      status: 403,
+      headers: { 'Content-Type': 'application/json' },
+    })
+  }
+
+  return new Response(JSON.stringify(localCache.stats()), {
+    headers: { 'Content-Type': 'application/json' },
+  })
+}
+
 export const POST = async (req) => {
   const payload = await req.json()
 
@@ -138,7 +164,9 @@ export const POST = async (req) => {
   const tags = await resolveTags(payload)
 
   let result
-  if (ISR === 'vercel') {
+  if (isLocal) {
+    result = invalidateLocal(tags)
+  } else if (ISR === 'vercel') {
     result = await invalidateVercel(tags)
   } else if (ISR === 'aws') {
     result = await invalidateAWS(tags)

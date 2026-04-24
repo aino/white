@@ -1,1 +1,1 @@
-export { POST } from '../@white/api/revalidate.js'
+export { GET, POST } from '../@white/api/revalidate.js'

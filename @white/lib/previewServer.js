@@ -7,7 +7,8 @@ import sharp from 'sharp'
 import fetch from 'node-fetch'
 import middlewareHandler, { config as middlewareConfig } from '../../src/middleware.js'
 import { matchesMiddleware } from './middlewareMatcher.js'
-import { LOCALES as locales } from '../../src/config.js'
+import { LOCALES as locales, ISR } from '../../src/config.js'
+import * as localCache from './localCache.js'
 
 const __filename = fileURLToPath(import.meta.url)
 const __dirname = dirname(__filename)
@@ -134,7 +135,9 @@ app.use(async (req, res, next) => {
     await Promise.all(
       files.map(async (file) => {
         if (!file.endsWith('.js')) return
-        
+        // Skip catch-all routes (handled by ISR renderer)
+        if (file.includes('[')) return
+
         const route = `/api/${file.replace('.js', '')}`
         const module = await import(join(API_DIR, file))
         
@@ -179,39 +182,88 @@ app.use(async (req, res, next) => {
   // Serve static files from dist
   app.use(express.static(DIST_DIR))
 
-  // SPA fallback - serve specific HTML file or 404 for non-API routes
-  app.use((req, res, next) => {
-    if (!req.path.startsWith('/api/') && req.method === 'GET') {
-      // Try to find the specific HTML file for this route
-      let htmlPath = req.path
-      if (htmlPath.endsWith('/')) {
-        htmlPath = htmlPath + 'index.html'
-      } else {
-        htmlPath = htmlPath + '/index.html'
+  // Page handler - static files or dynamic ISR rendering
+  app.use(async (req, res, next) => {
+    if (req.path.startsWith('/api/')) {
+      return res.status(404).json({ error: 'API route not found' })
+    }
+
+    if (req.method !== 'GET') {
+      return next()
+    }
+
+    // ISR mode: dynamic rendering with local cache
+    if (ISR === 'vercel' || ISR === 'aws') {
+      const path = req.path.replace(/\/$/, '') || '/'
+
+      // Check local cache
+      const cached = localCache.get(path)
+      if (cached) {
+        res.setHeader('Content-Type', 'text/html')
+        res.setHeader('X-Local-Cache', 'HIT')
+        res.setHeader('Age', cached.age)
+        return res.send(cached.html)
       }
-      
-      const fullPath = join(DIST_DIR, htmlPath)
-      
-      // Check if specific HTML file exists
-      if (fsSync.existsSync(fullPath)) {
-        res.sendFile(fullPath)
-      } else {
-        // Serve locale-specific 404 page
-        const locale = getLocaleFromUrl(req.path)
-        const notFoundPath = locale === locales[0] ? '/404/index.html' : `/${locale}/404/index.html`
-        const notFoundFullPath = join(DIST_DIR, notFoundPath)
-        
-        if (fsSync.existsSync(notFoundFullPath)) {
-          res.status(404).sendFile(notFoundFullPath)
-        } else {
-          // Ultimate fallback if 404 page doesn't exist
-          res.status(404).send('404 - Page Not Found')
+
+      // Cache miss - render dynamically
+      try {
+        const { GET } = await import('../api/renderer.js')
+        const protocol = req.protocol || 'http'
+        const host = req.get('host') || 'localhost'
+        const webRequest = new Request(`${protocol}://${host}/api?path=${encodeURIComponent(path)}`, {
+          method: 'GET',
+          headers: req.headers,
+        })
+
+        const response = await GET(webRequest)
+        const html = await response.text()
+
+        if (response.status === 200) {
+          // Extract tags from response header
+          const tagHeader = response.headers.get('Vercel-Cache-Tag') || ''
+          const tags = tagHeader ? tagHeader.split(',') : []
+
+          // Store in local cache
+          localCache.set(path, html, tags)
+
+          res.setHeader('X-Local-Cache', 'MISS')
         }
+
+        res.status(response.status)
+        response.headers.forEach((value, key) => {
+          if (key.toLowerCase() !== 'content-length') {
+            res.setHeader(key, value)
+          }
+        })
+        return res.send(html)
+      } catch (error) {
+        console.error('Render error:', error)
+        return res.status(500).send('Render error: ' + error.message)
       }
-    } else if (req.path.startsWith('/api/')) {
-      res.status(404).json({ error: 'API route not found' })
+    }
+
+    // Static mode: serve pre-built HTML files
+    let htmlPath = req.path
+    if (htmlPath.endsWith('/')) {
+      htmlPath = htmlPath + 'index.html'
     } else {
-      next()
+      htmlPath = htmlPath + '/index.html'
+    }
+
+    const fullPath = join(DIST_DIR, htmlPath)
+
+    if (fsSync.existsSync(fullPath)) {
+      res.sendFile(fullPath)
+    } else {
+      const locale = getLocaleFromUrl(req.path)
+      const notFoundPath = locale === locales[0] ? '/404/index.html' : `/${locale}/404/index.html`
+      const notFoundFullPath = join(DIST_DIR, notFoundPath)
+
+      if (fsSync.existsSync(notFoundFullPath)) {
+        res.status(404).sendFile(notFoundFullPath)
+      } else {
+        res.status(404).send('404 - Page Not Found')
+      }
     }
   })
   

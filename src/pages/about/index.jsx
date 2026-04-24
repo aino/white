@@ -5,7 +5,9 @@ export default function About({ title, locale, path }) {
   return (
     <Layout locale={locale} title={title} path={path}>
       <h1>About</h1>
-      <p><small>Rendered: {rendered}</small></p>
+      <p>
+        <small>Rendered: {rendered}</small>
+      </p>
       <p>
         White renders static HTML from JSX at build time. Client-side navigation
         prefetches on hover and swaps the content area.

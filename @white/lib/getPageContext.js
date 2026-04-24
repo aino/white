@@ -1,9 +1,4 @@
 import { setGlobalData } from '../utils/globalData.js'
-import * as config from '../../src/data.config.js'
-import { resolve } from 'path'
-import { PAGES_DIR } from './index'
-import fs from 'fs'
-import { LOCALES } from '../../src/config.js'
 
 // Match URL segments against a route pattern like /products/[category]/[slug]
 // Returns { category: 'jeans', slug: 'slim-finn' } or null if no match
@@ -23,9 +18,7 @@ function matchRoute(segments, routePattern) {
   return params
 }
 
-export async function getPageContext(url, globalDataCache = null) {
-  const { globalData, routes } = config
-
+export async function getPageContext(url, { routes, globalData, locales, draft = false }) {
   if (url.startsWith('/api/')) {
     return null
   }
@@ -33,25 +26,21 @@ export async function getPageContext(url, globalDataCache = null) {
   const path = url.replace(/^\/|\/?\w+\.html$|\/$/g, '').trim()
   const segments = path.split('/').filter(Boolean)
 
-  let locale = LOCALES[0]
-  if (LOCALES.includes(segments[0])) {
+  let locale = locales[0]
+  if (locales.includes(segments[0])) {
     locale = segments.shift()
   }
 
-  if (!globalDataCache && globalData) {
-    globalDataCache = await globalData({ locale })
-  }
-
-  const globals = globalDataCache || {}
+  const globals = globalData ? await globalData({ locale, draft }) : {}
   setGlobalData(globals)
 
   // Try exact match first
   const exactKey = `/${segments.join('/')}`
   const exactPage = routes[exactKey]
   if (exactPage) {
-    let data = { ...globals, locale }
+    let data = { ...globals, locale, draft }
     if (exactPage.data) {
-      const result = await exactPage.data({ locale, globalData: globals })
+      const result = await exactPage.data({ locale, globalData: globals, draft })
       if (result === null) return null
       Object.assign(data, result)
     }
@@ -65,9 +54,8 @@ export async function getPageContext(url, globalDataCache = null) {
     const params = matchRoute(segments, pattern)
     if (!params) continue
 
-    // In production static builds, params() validates allowed combinations.
-    // In dev, skip validation — let data() handle 404s by returning null.
-    if (page.params && process.env.NODE_ENV === 'production') {
+    // If params() is defined, validate (for static builds)
+    if (page.params) {
       const validParams = await page.params(globals)
       const isValid = validParams.some((p) =>
         Object.keys(params).every((k) => p[k] === params[k])
@@ -76,25 +64,13 @@ export async function getPageContext(url, globalDataCache = null) {
     }
 
     // Fetch page data
-    let data = { ...globals, locale, ...params }
+    let data = { ...globals, locale, draft, ...params }
     if (page.data) {
-      const result = await page.data({ ...params, locale, globalData: globals })
+      const result = await page.data({ ...params, locale, globalData: globals, draft })
       if (result === null) return null
       Object.assign(data, result)
     }
     return { key: pattern, data }
-  }
-
-  // No route definition, check if template file exists
-  const templatePath = resolve(
-    __dirname,
-    '../../',
-    PAGES_DIR,
-    segments.join('/'),
-    'index.jsx'
-  )
-  if (fs.existsSync(templatePath)) {
-    return { key: exactKey, data: { ...globals, locale } }
   }
 
   return null

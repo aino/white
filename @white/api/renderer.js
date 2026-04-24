@@ -1,4 +1,4 @@
-import { getPageContext } from '../lambda/getPageContext.js'
+import { getPageContext } from '../lib/getPageContext.js'
 import { globalData, routes } from '../../src/data.config.js'
 import { LOCALES, ISR } from '../../src/config.js'
 
@@ -24,13 +24,13 @@ function injectAssets(html, assets) {
   )
 }
 
-function getCacheTags(context) {
+function getCacheTags(context, path) {
   const tags = []
   if (context.locale) tags.push(`locale-${context.locale}`)
-  if (context.key) {
-    // Add path-based tag for direct path invalidation
-    const pathTag = context.key.replace(/\//g, '-').replace(/^-/, '')
-    tags.push(`path-${pathTag}`)
+  if (path) {
+    // Use actual request path for tag (e.g., /en-US/about → path-en-US-about)
+    const pathTag = path.replace(/^\//, '').replace(/\//g, '-')
+    if (pathTag) tags.push(`path-${pathTag}`)
   }
   // Add both ID and slug for products (CMS might use either)
   if (context.data?.product?.id) tags.push(`product-${context.data.product.id}`)
@@ -80,11 +80,11 @@ async function render(path, { draft = false } = {}) {
     'Content-Type': 'text/html',
   }
 
-  if (ISR === 'vercel' && !draft) {
+  if ((ISR === 'vercel' || ISR === 'aws') && !draft) {
     // Cache for 1 hour, stale-while-revalidate for 1 day
     headers['Cache-Control'] = 'public, s-maxage=3600, stale-while-revalidate=86400'
     headers['Vercel-CDN-Cache-Control'] = 'public, s-maxage=3600, stale-while-revalidate=86400'
-    const tags = getCacheTags(context)
+    const tags = getCacheTags(context, path)
     if (tags) headers['Vercel-Cache-Tag'] = tags
   } else {
     headers['Cache-Control'] = 'no-store'

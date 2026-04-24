@@ -5,11 +5,11 @@ import { resolve } from 'path'
 import { fileURLToPath } from 'url'
 
 const __dirname = resolve(fileURLToPath(import.meta.url), '..')
-const configPath = resolve(__dirname, '../../../isr.config.js')
+const configPath = resolve(__dirname, '../../../aws.config.js')
 const config = (await import(configPath)).default
 
 if (!config.name || !config.vercelUrl) {
-  throw new Error('isr.config.js must have name and vercelUrl')
+  throw new Error('aws.config.js must have name and vercelUrl')
 }
 
 const app = new cdk.App()

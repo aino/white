@@ -5,11 +5,11 @@ import { writeFileSync } from 'fs'
 import { resolve } from 'path'
 
 const ROOT = resolve(import.meta.dirname, '../..')
-const config = (await import(resolve(ROOT, 'isr.config.js'))).default
+const config = (await import(resolve(ROOT, 'aws.config.js'))).default
 const { name, aws } = config
 
 if (!aws?.bucket || !aws?.distributionId) {
-  console.error('Missing aws config in isr.config.js. Run initial CDK deploy first.')
+  console.error('Missing aws config in aws.config.js. Run initial CDK deploy first.')
   process.exit(1)
 }
 
@@ -23,7 +23,7 @@ console.log(`\nDeploying ${name} → ${aws.distributionId}`)
 // Build
 step('Building assets + templates')
 run('npm run build:isr')
-run(`node @white/build/bundle-lambda.js ${aws.bucket}`)
+run(`node @white/aws/bundle.js ${aws.bucket}`)
 
 // Upload assets + public files
 step('Uploading assets to S3')
@@ -38,11 +38,11 @@ const functionArn = out(
 
 if (!functionArn || functionArn === 'None') {
   console.error(`Lambda not found. Run initial CDK deploy first:`)
-  console.error(`  cd @white/isr && npx cdk deploy --context name=${name} --context domain=${config.domain} --context vercelUrl=${config.vercelUrl}`)
+  console.error(`  cd @white/aws && npx cdk deploy --context name=${name} --context domain=${config.domain} --context vercelUrl=${config.vercelUrl}`)
   process.exit(1)
 }
 
-run(`cd dist/isr/bundle && zip -j /tmp/white-lambda.zip index.js`)
+run(`cd dist/aws/bundle && zip -j /tmp/white-lambda.zip index.js`)
 run(`aws lambda update-function-code --function-name ${functionArn} --zip-file fileb:///tmp/white-lambda.zip --region us-east-1 --no-cli-pager > /dev/null`)
 run(`aws lambda wait function-updated --function-name ${functionArn} --region us-east-1`)
 const version = out(`aws lambda publish-version --function-name ${functionArn} --region us-east-1 --query "Version" --output text`)
@@ -55,7 +55,7 @@ const renderFunctionArn = out(
 )
 
 if (renderFunctionArn && renderFunctionArn !== 'None') {
-  run(`cd dist/isr/render-bundle && zip -j /tmp/white-render-lambda.zip index.js`)
+  run(`cd dist/aws/render-bundle && zip -j /tmp/white-render-lambda.zip index.js`)
   run(`aws lambda update-function-code --function-name ${renderFunctionArn} --zip-file fileb:///tmp/white-render-lambda.zip --region us-east-1 --no-cli-pager > /dev/null`)
   run(`aws lambda wait function-updated --function-name ${renderFunctionArn} --region us-east-1`)
   console.log('  Render Lambda updated')
