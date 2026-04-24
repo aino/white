@@ -30,6 +30,9 @@ async function resolveTags(payload) {
     case 'page':
       return [`path-${id}`]
 
+    case 'locale':
+      return [`locale-${id}`]
+
     default:
       // Unknown content type — return null to purge all
       return null
