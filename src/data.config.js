@@ -48,4 +48,20 @@ export const routes = {
   '/404': {
     data: () => ({ path: '/404', title: 'Not Found' }),
   },
+  // Error testing routes
+  '/test/error': {
+    data: async () => {
+      throw new Error('Simulated API failure')
+    },
+  },
+  '/test/flaky': {
+    data: async () => {
+      // Fail on even minutes (allows testing cache → fail scenario)
+      const minute = new Date().getMinutes()
+      if (minute % 2 === 0) {
+        throw new Error('Flaky API failure (even minute)')
+      }
+      return { title: 'Flaky Page', renderedAt: new Date().toISOString() }
+    },
+  },
 }
