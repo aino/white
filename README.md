@@ -32,7 +32,7 @@ White doesn’t replace React. It removes React from the 90% of pages that never
 - **Interactive islands** — vanilla JS or React components mount where needed
 - **Any data source** — CMS, commerce API, database via async functions
 - **Multi-locale** — automatic URL prefixing, localized hrefs, multi-market out of the box
-- **Two deploy modes** — static site to any host, or on-demand ISR via AWS Lambda@Edge
+- **Three deploy modes** — static site to any host, Vercel edge caching, or self-hosted AWS ISR
 
 ## Get Started
 
@@ -482,13 +482,17 @@ npm run build  # Generates ./dist
 
 ### ISR (on-demand static generation)
 
-For large-scale sites (thousands of products, hundreds of locales), enable ISR to build pages on-demand and cache them globally via AWS CloudFront. Pages are rendered by Lambda@Edge on first visit and cached — subsequent visitors get the page instantly from the edge. Content updates invalidate specific pages via webhook.
+For large-scale sites (thousands of products, hundreds of locales), enable ISR to build pages on-demand and cache them at the edge. Pages render on first visit and are cached — subsequent visitors get instant responses. Content updates invalidate specific pages via webhook.
+
+Two providers:
+- **Vercel** — zero infrastructure, uses Vercel's edge cache
+- **AWS** — self-hosted via CloudFront + Lambda@Edge
 
 See [ISR.md](ISR.md) for full setup.
 
 ```js
 // src/config.js
-export const ISR = true
+export const ISR = 'vercel'  // or 'aws' or false
 ```
 
 ## License
