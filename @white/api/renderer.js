@@ -40,40 +40,51 @@ function getCacheTags(context, path) {
   return tags.join(',')
 }
 
+async function renderErrorPage(registry, assetManifest, status, fallbackMessage) {
+  const errorKey = `/${status}`
+  const ErrorPage = registry[errorKey]
+  if (ErrorPage) {
+    const ctx = await getPageContext(errorKey, {
+      routes,
+      globalData,
+      locales: LOCALES,
+      draft: false,
+    }).catch(() => null)
+    return new Response(
+      injectAssets('<!DOCTYPE html>' + ErrorPage(ctx?.data || { locale: LOCALES[0] }), assetManifest),
+      {
+        status,
+        headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' },
+      }
+    )
+  }
+  return new Response(fallbackMessage, { status })
+}
+
 async function render(path, { draft = false } = {}) {
   const registry = await loadTemplates()
   const assetManifest = await loadAssets()
 
-  const context = await getPageContext(path, {
-    routes,
-    globalData,
-    locales: LOCALES,
-    draft,
-  })
+  let context
+  try {
+    context = await getPageContext(path, {
+      routes,
+      globalData,
+      locales: LOCALES,
+      draft,
+    })
+  } catch (err) {
+    console.error('Data fetch error:', err)
+    return renderErrorPage(registry, assetManifest, 500, 'Server Error')
+  }
 
   if (!context) {
-    const NotFound = registry['/404']
-    if (NotFound) {
-      const ctx404 = await getPageContext('/404', {
-        routes,
-        globalData,
-        locales: LOCALES,
-        draft,
-      })
-      return new Response(
-        injectAssets('<!DOCTYPE html>' + NotFound(ctx404?.data || { locale: LOCALES[0] }), assetManifest),
-        {
-          status: 404,
-          headers: { 'Content-Type': 'text/html', 'Cache-Control': 'no-store' },
-        }
-      )
-    }
-    return new Response('Not Found', { status: 404 })
+    return renderErrorPage(registry, assetManifest, 404, 'Not Found')
   }
 
   const Template = registry[context.key]
   if (!Template) {
-    return new Response('Template not found', { status: 500 })
+    return renderErrorPage(registry, assetManifest, 500, 'Template not found')
   }
 
   const headers = {
@@ -90,10 +101,15 @@ async function render(path, { draft = false } = {}) {
     headers['Cache-Control'] = 'no-store'
   }
 
-  return new Response(
-    injectAssets('<!DOCTYPE html>' + Template(context.data), assetManifest),
-    { headers }
-  )
+  try {
+    return new Response(
+      injectAssets('<!DOCTYPE html>' + Template(context.data), assetManifest),
+      { headers }
+    )
+  } catch (err) {
+    console.error('Render error:', err)
+    return renderErrorPage(registry, assetManifest, 500, 'Render Error')
+  }
 }
 
 function parseCookies(cookieHeader) {

@@ -48,6 +48,9 @@ export const routes = {
   '/404': {
     data: () => ({ path: '/404', title: 'Not Found' }),
   },
+  '/500': {
+    data: () => ({ path: '/500', title: 'Server Error' }),
+  },
   // Error testing routes
   '/test/error': {
     data: async () => {
