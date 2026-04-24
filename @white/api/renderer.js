@@ -26,7 +26,7 @@ function injectAssets(html, assets) {
 
 function getCacheTags(context, path) {
   const tags = []
-  if (context.locale) tags.push(`locale-${context.locale}`)
+  if (context.data?.locale) tags.push(`locale-${context.data.locale}`)
   if (path) {
     // Use actual request path for tag (e.g., /en-US/about → path-en-US-about)
     const pathTag = path.replace(/^\//, '').replace(/\//g, '-')
