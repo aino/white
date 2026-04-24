@@ -32,7 +32,7 @@ White doesn’t replace React. It removes React from the 90% of pages that never
 - **Interactive islands** — vanilla JS or React components mount where needed
 - **Any data source** — CMS, commerce API, database via async functions
 - **Multi-locale** — automatic URL prefixing, localized hrefs, multi-market out of the box
-- **Three deploy modes** — static site to any host, Vercel edge caching, or self-hosted AWS ISR
+- **Three deploy modes** — static site to any host, or on-demand ISR via Vercel or AWS
 
 ## Get Started
 
