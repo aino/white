@@ -28,9 +28,10 @@ function getCacheTags(context, path) {
   const tags = []
   if (context.data?.locale) tags.push(`locale-${context.data.locale}`)
   if (path) {
-    // Use actual request path for tag (e.g., /en-US/about → path-en-US-about)
     const pathTag = path.replace(/^\//, '').replace(/\//g, '-')
     if (pathTag) tags.push(`path-${pathTag}`)
+    // Add collection tags based on path pattern
+    if (path.match(/\/products\//)) tags.push('products')
   }
   // Add both ID and slug for products (CMS might use either)
   if (context.data?.product?.id) tags.push(`product-${context.data.product.id}`)

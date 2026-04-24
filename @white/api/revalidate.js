@@ -33,6 +33,9 @@ async function resolveTags(payload) {
     case 'locale':
       return [`locale-${id}`]
 
+    case 'products':
+      return ['products']
+
     default:
       // Unknown content type — return null to purge all
       return null
