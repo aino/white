@@ -4,6 +4,7 @@ import { PAGES_DIR } from './index'
 import compileTemplate from './compileTemplate.js'
 import { getPageContext } from './getPageContext.js'
 import { LOCALES } from '../../src/config.js'
+import { routes, globalData } from '../../src/data.config.js'
 import middlewareHandler, {
   config as middlewareConfig,
 } from '../../src/middleware.js'
@@ -17,7 +18,7 @@ export const getLocaleFromUrl = (url) => {
 }
 
 const getTemplateContext = async (url) => {
-  const pageContext = await getPageContext(url)
+  const pageContext = await getPageContext(url, { routes, globalData, locales: LOCALES })
   if (!pageContext) {
     return null
   }

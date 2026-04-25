@@ -1,14 +1,15 @@
-// Generate 100 locales for stress testing
-const languages = ['en', 'sv', 'de', 'fi', 'da', 'no', 'nl', 'fr', 'es', 'it', 'pt', 'pl', 'cs', 'hu', 'ro', 'bg', 'el', 'tr', 'ru', 'uk']
-const countries = ['US', 'GB', 'SE', 'FI', 'DK', 'NO', 'NL', 'FR', 'ES', 'IT', 'PT', 'PL', 'CZ', 'HU', 'RO', 'BG', 'GR', 'TR', 'RU', 'UA']
-
-export const LOCALES = []
-for (let i = 0; i < 100; i++) {
-  const lang = languages[i % languages.length]
-  const country = countries[Math.floor(i / languages.length) % countries.length]
-  LOCALES.push(`${lang}-${country}`)
-}
-
+export const LOCALES = [
+  'en-US', // English (United States)
+  'en-GB', // English (United Kingdom)
+  'en-SE', // English (Sweden)
+  'en-FI', // English (Finland)
+  'sv-SE', // Swedish (Sweden)
+  'sv-FI', // Swedish (Finland)
+  'de-DE', // German (Germany)
+  'de-AT', // German (Austria)
+  'de-CH', // German (Switzerland)
+  'fi-FI', // Finnish (Finland)
+]
 export const PORT = 4667
 export const IMAGE_QUALITY = 90
 

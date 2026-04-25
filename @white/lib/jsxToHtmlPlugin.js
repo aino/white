@@ -1,6 +1,7 @@
 import { createServer } from 'vite'
 import { getPageContext } from './getPageContext.js'
 import { LOCALES } from '../../src/config.js'
+import { routes, globalData } from '../../src/data.config.js'
 import compileTemplate from './compileTemplate.js'
 import getDynamicRoutes from './getDynamicRoutes.js'
 
@@ -78,7 +79,7 @@ export default function jsxToHtmlPlugin() {
                           ? dynamicPath
                           : `/${locale}${dynamicPath}`
 
-                      const pageContext = await getPageContext(url)
+                      const pageContext = await getPageContext(url, { routes, globalData, locales: LOCALES })
                       if (pageContext) {
                         const { data } = pageContext
 
@@ -170,7 +171,7 @@ export default function jsxToHtmlPlugin() {
                       ? `/${locale}`
                       : `/${locale}/${routeKey}`
 
-                  const pageContext = await getPageContext(url)
+                  const pageContext = await getPageContext(url, { routes, globalData, locales: LOCALES })
                   if (pageContext) {
                     const { data } = pageContext
 

@@ -2,7 +2,6 @@ import { resolve } from 'path'
 import fullReload from 'vite-plugin-full-reload'
 import { ViteMinifyPlugin } from 'vite-plugin-minify'
 import eslint from 'vite-plugin-eslint2'
-import dynamicFilesPlugin from './dynamicFilesPlugin.js'
 import virtualHtmlPlugin from './virtualHtmlPlugin.js'
 import dynamicImageResizePlugin from './dynamicImagesPlugin.js'
 import virtualScriptsPlugin from './virtualScriptsPlugin.js'
@@ -48,7 +47,6 @@ export default (async () => {
       fullReload([`${PAGES_DIR}/**/*.jsx`]),
       virtualHtmlPlugin(),
       dynamicImageResizePlugin(imageMetadataCache),
-      dynamicFilesPlugin(dynamicPaths),
       ViteMinifyPlugin({}),
     ],
     root: 'src/pages',
