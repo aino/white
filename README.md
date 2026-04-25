@@ -1,6 +1,6 @@
 # White
 
-A performance-first frontend platform.
+A performance-first frontend platform, built for agents.
 
 ## Why
 
@@ -108,13 +108,17 @@ For larger data (product objects, cart items), use a `<script type="application/
 
 ```jsx
 <div data-component="cart">
-  {items.map(item => <div>{item.title}</div>)}
+  {items.map((item) => (
+    <div>{item.title}</div>
+  ))}
   <script type="application/json">{JSON.stringify(items)}</script>
 </div>
 ```
 
 ```js
-const items = JSON.parse(node.querySelector('script[type="application/json"]').textContent)
+const items = JSON.parse(
+  node.querySelector('script[type="application/json"]').textContent
+)
 ```
 
 Both approaches are standard HTML — no framework API needed.
@@ -485,6 +489,7 @@ npm run build  # Generates ./dist
 For large-scale sites (thousands of products, hundreds of locales), enable ISR to build pages on-demand and cache them at the edge. Pages render on first visit and are cached — subsequent visitors get instant responses. Content updates invalidate specific pages via webhook.
 
 Two providers:
+
 - **Vercel** — zero infrastructure, uses Vercel's edge cache
 - **AWS** — self-hosted via CloudFront + Lambda@Edge
 
@@ -492,7 +497,7 @@ See [ISR.md](ISR.md) for full setup.
 
 ```js
 // src/config.js
-export const ISR = 'vercel'  // or 'aws' or false
+export const ISR = 'vercel' // or 'aws' or false
 ```
 
 ## License
