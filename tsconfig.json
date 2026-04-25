@@ -14,8 +14,7 @@
     "paths": {
       "src/*": ["./src/*"],
       "@white/*": ["./@white/*"]
-    },
-    "ignoreDeprecations": "6.0"
+    }
   },
   "include": [
     "@white/lib/**/*.js",

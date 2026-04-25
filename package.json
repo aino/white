@@ -14,6 +14,7 @@
     "vercel-build": "node @white/build/vercel-build.js",
     "start": "node @white/lib/previewServer.js",
     "lint": "eslint .",
+    "typecheck": "tsc",
     "deploy:aws": "node @white/aws/deploy.js"
   },
   "devDependencies": {
