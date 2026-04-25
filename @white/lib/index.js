@@ -3,14 +3,13 @@ import fullReload from 'vite-plugin-full-reload'
 import { ViteMinifyPlugin } from 'vite-plugin-minify'
 import eslint from 'vite-plugin-eslint2'
 import virtualHtmlPlugin from './virtualHtmlPlugin.js'
-import dynamicImageResizePlugin from './dynamicImagesPlugin.js'
 import virtualScriptsPlugin from './virtualScriptsPlugin.js'
 import virtualAutoCssPlugin from './virtualAutoCssPlugin.js'
 import virtualComponentsPlugin from './virtualComponentsPlugin.js'
 import jsxRuntimeInjector from './jsxRuntimeInjector.js'
 import customJsxTransform from './customJsxTransform.js'
 import jsxToHtmlPlugin from './jsxToHtmlPlugin.js'
-import preloadImageMetadata from './preloadImageMetaData.js'
+import dynamicImageResizePlugin from './dynamicImagesPlugin.js'
 import getDynamicRoutes from './getDynamicRoutes.js'
 import viteCompression from 'vite-plugin-compression'
 import { API_PORT } from './ports.js'
@@ -22,7 +21,6 @@ export const getPath = (name) =>
 
 export default (async () => {
   const { input, dynamicPaths } = await getDynamicRoutes()
-  const imageMetadataCache = await preloadImageMetadata()
 
   return {
     plugins: [
@@ -46,7 +44,7 @@ export default (async () => {
       jsxRuntimeInjector(),
       fullReload([`${PAGES_DIR}/**/*.jsx`]),
       virtualHtmlPlugin(),
-      dynamicImageResizePlugin(imageMetadataCache),
+      dynamicImageResizePlugin(),
       ViteMinifyPlugin({}),
     ],
     root: 'src/pages',

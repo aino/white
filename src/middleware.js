@@ -1,3 +1,4 @@
+/** @returns {Promise<{headers?: Record<string, string>} | void>} */
 export default async function handler(req) {
   // Get preferred locale and set server cookie
 }

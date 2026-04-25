@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "checkJs": true,
+    "allowJs": true,
+    "noEmit": true,
+    "strict": false,
+    "moduleResolution": "bundler",
+    "target": "ES2022",
+    "module": "ESNext",
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "skipLibCheck": true,
+    "resolveJsonModule": true,
+    "paths": {
+      "src/*": ["./src/*"],
+      "@white/*": ["./@white/*"]
+    },
+    "ignoreDeprecations": "6.0"
+  },
+  "include": [
+    "@white/lib/**/*.js",
+    "@white/api/**/*.js",
+    "@white/types/**/*.d.ts",
+    "src/data.config.js",
+    "src/config.js"
+  ],
+  "exclude": [
+    "node_modules",
+    "dist"
+  ]
+}

@@ -179,8 +179,7 @@ export default function jsxToHtmlPlugin() {
                     let html = await compileTemplate(
                       jsxPath,
                       { ...data, locale: locale },
-                      vite,
-                      { locales: LOCALES }
+                      vite
                     )
 
                     // Replace @/ imports with actual asset paths and add CSS links
